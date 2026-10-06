@@ -161,43 +161,39 @@ async function runCrawlerLoop() {
           continue;
         }
 
-        console.log(`[Dribbble Crawler] Downloading raw media (${mediaInfo.type}): ${mediaInfo.url.substring(0, 50)}...`);
-        const mediaPath = path.join(tempDir, `${fileId}${mediaInfo.ext}`);
-        
-        // Download the file directly using Playwright's fetch context
-        const response = await context.request.get(mediaInfo.url);
-        const buffer = await response.body();
-        fs.writeFileSync(mediaPath, buffer);
+        let mediaPath = path.join(tempDir, `${fileId}${mediaInfo.ext}`);
+        try {
+          // Download the file directly using Playwright's fetch context
+          const response = await context.request.get(mediaInfo.url);
+          const buffer = await response.body();
+          fs.writeFileSync(mediaPath, buffer);
 
-        console.log('[Dribbble Crawler] Media downloaded. Sending to AI pipeline...');
+          console.log('[Dribbble Crawler] Media downloaded. Sending to AI pipeline...');
 
-        // 1. Gemini
-        const designMarkdown = await extractDesignSpec([{ filePath: mediaPath, mimeType: mediaInfo.type }]);
-        
-        // Save markdown
-        fs.writeFileSync(path.join(designsDir, `${fileId}.md`), designMarkdown);
+          // 1. Gemini
+          const designMarkdown = await extractDesignSpec([{ filePath: mediaPath, mimeType: mediaInfo.type }]);
+          
+          // Save markdown
+          fs.writeFileSync(path.join(designsDir, `${fileId}.md`), designMarkdown);
 
-        // 2. DeepSeek
-        const indexNode = await generateLightweightIndex(designMarkdown, fileId);
+          // 2. DeepSeek
+          const indexNode = await generateLightweightIndex(designMarkdown, fileId);
 
-        // Append to Master Index
-        const masterIndex = JSON.parse(fs.readFileSync(masterIndexPath, 'utf8'));
-        masterIndex.push(indexNode);
-        fs.writeFileSync(masterIndexPath, JSON.stringify(masterIndex, null, 2));
+          // Append to Master Index
+          const masterIndex = JSON.parse(fs.readFileSync(masterIndexPath, 'utf8'));
+          masterIndex.push(indexNode);
+          fs.writeFileSync(masterIndexPath, JSON.stringify(masterIndex, null, 2));
 
-        stats.indexedCount++;
-        console.log(`[Dribbble Crawler] Successfully indexed: ${url}`);
-
-        // Cleanup temp file
-        if (mediaPath && fs.existsSync(mediaPath)) {
-          fs.unlinkSync(mediaPath);
+          stats.indexedCount++;
+          console.log(`[Dribbble Crawler] Successfully indexed: ${url}`);
+        } catch (shotErr) {
+          console.warn(`[Dribbble Crawler] Failed to process ${url}:`, shotErr.message);
+        } finally {
+          if (mediaPath && fs.existsSync(mediaPath)) {
+            try { fs.unlinkSync(mediaPath); } catch {}
+          }
+          await shotPage.close();
         }
-
-      } catch (shotErr) {
-        console.warn(`[Dribbble Crawler] Failed to process ${url}:`, shotErr.message);
-      } finally {
-        await shotPage.close();
-      }
 
       // Respectful delay between requests (5-8 seconds)
       if (isCrawling && i < uniqueLinks.length - 1) {
