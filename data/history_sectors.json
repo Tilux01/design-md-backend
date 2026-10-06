@@ -1,0 +1,57 @@
+[
+  {
+    "device": "desktop",
+    "sector": "E-Commerce & High-End Fashion",
+    "platform": {
+      "name": "Godly",
+      "url": "https://godly.website",
+      "searchPath": "/?s="
+    },
+    "query": "high-end fashion e-commerce product page with luxury lookbook vibes and editorial split-screen hero",
+    "timestamp": "2026-10-06T13:37:44.725Z"
+  },
+  {
+    "device": "mobile",
+    "sector": "Luxury Real Estate & Architecture",
+    "platform": {
+      "name": "Mobbin",
+      "url": "https://mobbin.com",
+      "searchPath": "/search?q="
+    },
+    "query": "luxury real estate app property listing card stack with dark mode and 3D virtual tour hero section",
+    "timestamp": "2026-10-06T13:41:41.422Z"
+  },
+  {
+    "device": "desktop",
+    "sector": "B2B Enterprise SaaS",
+    "platform": {
+      "name": "Godly",
+      "url": "https://godly.website",
+      "searchPath": "/?s="
+    },
+    "query": "enterprise analytics suite dark mode dashboard with bento grid data visualization and approval workflow cards",
+    "timestamp": "2026-10-06T13:44:40.343Z"
+  },
+  {
+    "device": "mobile",
+    "sector": "Luxury Real Estate & Architecture",
+    "platform": {
+      "name": "Mobbin",
+      "url": "https://mobbin.com",
+      "searchPath": "/search?q="
+    },
+    "query": "luxury real estate app property tour glassmorphism card stack minimal architecture portfolio dark mode",
+    "timestamp": "2026-10-06T13:45:53.441Z"
+  },
+  {
+    "device": "desktop",
+    "sector": "B2B Enterprise SaaS",
+    "platform": {
+      "name": "Land-book",
+      "url": "https://land-book.com",
+      "searchPath": "/search?q="
+    },
+    "query": "b2b saas dashboard dark mode analytics cards subscription pricing table enterprise",
+    "timestamp": "2026-10-06T13:49:50.673Z"
+  }
+]
