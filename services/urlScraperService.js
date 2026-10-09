@@ -319,7 +319,20 @@ export async function extractAllMediaFromUrl(url) {
         });
       } catch (scrollEvalErr) {}
 
-      await page.waitForTimeout(1200);
+      await page.waitForTimeout(1000);
+
+      // Natively hover over pins to force Pinterest to trigger the video network requests
+      try {
+        const pins = await page.$$('div[data-test-id="pin"], div[data-grid-item="true"], a[href*="/pin/"]');
+        // Only hover the most recently loaded ones to save time
+        const pinsToHover = pins.slice(-15);
+        for (const pin of pinsToHover) {
+          await pin.hover({ timeout: 500 }).catch(() => {});
+          await page.waitForTimeout(150); // Small delay to let network request fire
+        }
+      } catch (hoverErr) {}
+
+      await page.waitForTimeout(500);
 
       if (currentHeight === previousHeight && i > 7) {
         console.log(`[Media Scraper] Reached end of scroll page at step ${i + 1}.`);

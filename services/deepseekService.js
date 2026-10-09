@@ -119,29 +119,32 @@ export async function selectBestMatchingDesign(userPrompt, masterIndex) {
     return null;
   }
 
+  // Shuffle the index so that repeated identical queries return diverse results
+  const shuffledIndex = [...masterIndex].sort(() => Math.random() - 0.5);
+
   const apiKey = process.env.DEEPSEEK_API_KEY;
 
   if (!apiKey) {
     const lowerPrompt = userPrompt.toLowerCase();
-    const match = masterIndex.find(item => 
+    const match = shuffledIndex.find(item => 
       (item.summary && item.summary.toLowerCase().includes(lowerPrompt)) ||
       (item.style && item.style.toLowerCase().includes(lowerPrompt)) ||
       (item.sector && item.sector.toLowerCase().includes(lowerPrompt)) ||
       (item.device && item.device.toLowerCase().includes(lowerPrompt))
-    ) || masterIndex[masterIndex.length - 1];
+    ) || shuffledIndex[0];
 
     return {
       matched_id: match.id,
-      explanation: `Selected design matching your request based on index metadata.`
+      explanation: `Selected a diverse design matching your request based on index metadata.`
     };
   }
 
   const prompt = `You are an AI UI/UX Design Assistant. A user is asking for a design recommendation with prompt: "${userPrompt}".
 
-Here is the index of available UI/UX design specifications in the database:
-${JSON.stringify(masterIndex, null, 2)}
+Here is the randomized index of available UI/UX design specifications in the database:
+${JSON.stringify(shuffledIndex, null, 2)}
 
-Analyze the user request and select the BEST matching design from the list above.
+Analyze the user request and identify all designs that match. From the matching designs, select ONE design to return. Since the index is shuffled, pick the very first valid match you encounter to ensure the user gets a diverse, random result each time they ask.
 Output ONLY valid JSON matching this schema:
 {
   "matched_id": "The exact 'id' of the best matching design",

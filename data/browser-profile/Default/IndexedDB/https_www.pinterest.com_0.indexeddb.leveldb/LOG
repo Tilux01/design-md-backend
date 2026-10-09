@@ -1,0 +1,9 @@
+2026/10/09-15:48:27.185 3ee3 Reusing MANIFEST /home/tilux/Documents/Design.Md project/data/browser-profile/Default/IndexedDB/https_www.pinterest.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/10/09-15:48:27.189 3ee3 Recovering log #22
+2026/10/09-15:48:27.238 3ee3 Reusing old log /home/tilux/Documents/Design.Md project/data/browser-profile/Default/IndexedDB/https_www.pinterest.com_0.indexeddb.leveldb/000022.log 
+2026/10/09-15:48:48.492 3ee8 Compacting 1@1 + 1@2 files
+2026/10/09-15:48:48.770 3ee8 Generated table #25@1: 135 keys, 25438 bytes
+2026/10/09-15:48:48.770 3ee8 Compacted 1@1 + 1@2 files => 25438 bytes
+2026/10/09-15:48:48.892 3ee8 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/10/09-15:48:48.895 3ee8 Delete type=2 #21
+2026/10/09-15:48:48.896 3ee8 Delete type=2 #23
