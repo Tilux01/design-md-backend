@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyDocs Premium Neomorphic Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-page: #D0D0E5;
+      --panel-light: #EBEBF3;
+      --panel-dark: #1F2133;
+      --panel-dark-grad: linear-gradient(160deg, #272A3F 0%, #171826 100%);
+      --accent-purple: #7879F1;
+      --accent-cyan: #56CCF2;
+      
+      --shadow-light-up: -5px -5px 12px #FFFFFF;
+      --shadow-light-down: 5px 5px 12px rgba(160, 165, 190, 0.4);
+      --shadow-neo-light: var(--shadow-light-up), var(--shadow-light-down);
+      
+      --shadow-dark-up: -4px -4px 10px rgba(50, 55, 80, 0.5);
+      --shadow-dark-down: 4px 4px 10px rgba(10, 10, 15, 0.8);
+      --shadow-neo-dark: var(--shadow-dark-up), var(--shadow-dark-down);
+      
+      --shadow-inner-dark: inset 3px 3px 8px rgba(0,0,0,0.6), inset -3px -3px 8px rgba(255,255,255,0.05);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 40px;
+      position: relative;
+    }
+
+    .ambient-glow {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 800px; height: 800px;
+      background: radial-gradient(circle, rgba(255,255,255,0.7) 0%, transparent 60%);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .dashboard-container {
+      display: flex;
+      flex-direction: row;
+      gap: 30px;
+      z-index: 1;
+    }
+
+    /* Glass Wrapper around panels */
+    .panel-wrapper {
+      padding: 8px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 48px;
+      box-shadow: 0 30px 60px rgba(30, 30, 50, 0.15),
+                  inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(10px);
+    }
+
+    .panel {
+      width: 290px;
+      height: 600px;
+      background: var(--panel-light);
+      border-radius: 40px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.8);
+    }
+
+    .panel-content {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* SVG Backgrounds for the smooth waves */
+    .svg-bg {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 1;
+    }
+
+    /* --- Top Nav Shared --- */
+    .top-nav {
+      height: 70px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 0 24px 10px 24px;
+      position: relative;
+    }
+    .top-icon {
+      font-size: 18px;
+      color: rgba(255,255,255,0.8);
+      cursor: pointer;
+    }
+    .top-icon.dark { color: #8A8FA8; }
+    
+    /* Neomorphic Top Bump for Avatar */
+    .avatar-bump {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: var(--panel-dark-grad);
+      box-shadow: var(--shadow-neo-dark);
+      display: flex; justify-content: center; align-items: center;
+    }
+    .avatar-bump.light {
+      background: var(--panel-light);
+      box-shadow: var(--shadow-neo-light);
+    }
+    .avatar-inner {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: #444;
+      border: 1.5px solid rgba(255,255,255,0.2);
+      display: flex; justify-content: center; align-items: center;
+      overflow: hidden;
+    }
+    .avatar-inner svg { width: 14px; height: 14px; fill: #fff; }
+    .avatar-bump.light .avatar-inner svg { fill: #8A8FA8; }
+    .avatar-bump.light .avatar-inner { border-color: rgba(0,0,0,0.1); background: #fff;}
+
+    /* --- Panel 1: Left --- */
+    .search-box {
+      margin: 10px 24px;
+      height: 40px;
+      border-radius: 20px;
+      background: rgba(10, 10, 15, 0.2);
+      box-shadow: var(--shadow-inner-dark);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      justify-content: space-between;
+    }
+    .search-box input {
+      background: none; border: none; outline: none;
+      color: #fff; font-size: 11px; font-weight: 500;
+      width: 100%;
+    }
+    .search-box input::placeholder { color: rgba(255,255,255,0.4); }
+    .search-box svg { width: 14px; fill: rgba(255,255,255,0.4); }
+
+    .mydocs-hero {
+      margin: 10px 24px;
+      padding: 16px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: inset 2px 2px 5px rgba(255,255,255,0.05),
+                  0 10px 20px rgba(0,0,0,0.2);
+      backdrop-filter: blur(5px);
+    }
+    .hero-top { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .hero-icon {
+      width: 34px; height: 34px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #FF719A, #9A71FF);
+      display: flex; justify-content: center; align-items: center;
+      box-shadow: 0 4px 10px rgba(154,113,255,0.4);
+    }
+    .hero-icon svg { width: 18px; fill: #fff; }
+    .hero-text h2 { color: #fff; font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+    .hero-text p { color: rgba(255,255,255,0.4); font-size: 9px; font-weight: 500; }
+    
+    .progress-bar-container {
+      height: 4px; background: rgba(255,255,255,0.1);
+      border-radius: 2px; margin-bottom: 8px; position: relative;
+    }
+    .progress-bar-fill {
+      width: 45%; height: 100%;
+      background: linear-gradient(90deg, #56CCF2, #7879F1);
+      border-radius: 2px;
+      box-shadow: 0 0 10px rgba(120, 121, 241, 0.8);
+      position: relative;
+    }
+    .progress-bar-fill::after {
+      content: ''; position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+      width: 8px; height: 8px; background: #fff; border-radius: 50%;
+      box-shadow: 0 0 5px #fff;
+    }
+    .storage-text { text-align: right; color: rgba(255,255,255,0.4); font-size: 8px; font-weight: 600; }
+
+    /* Light Grid Section */
+    .grid-container {
+      margin-top: auto;
+      padding: 0 24px 80px 24px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px 10px;
+    }
+    .grid-item {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    .neo-icon-btn {
+      width: 50px; height: 50px;
+      border-radius: 16px;
+      background: var(--panel-light);
+      box-shadow: var(--shadow-neo-light);
+      display: flex; justify-content: center; align-items: center;
+      transition: all 0.2s ease; cursor: pointer;
+    }
+    .neo-icon-btn:hover {
+      box-shadow: inset 3px 3px 6px rgba(160, 165, 190, 0.4), inset -3px -3px 6px #FFFFFF;
+    }
+    .neo-icon-btn svg, .neo-icon-btn img { width: 22px; height: 22px; object-fit: contain; }
+    .grid-text h3 { font-size: 10px; font-weight: 700; color: #333; text-align: center; }
+    .grid-text p { font-size: 8px; font-weight: 500; color: #999; text-align: center; margin-top: 2px;}
+
+    /* --- Panel 2: Right --- */
+    .panel-2 {
+      background: var(--panel-dark-grad);
+    }
+    .recents-header {
+      padding: 24px 24px 10px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .recents-header h3 { font-size: 11px; color: #8A8FA8; font-weight: 600; display: flex; align-items: center; gap: 6px;}
+    .recents-header svg { width: 12px; fill: #8A8FA8; }
+    
+    .panel-2 .grid-container {
+      margin-top: 0; padding: 10px 24px 0 24px;
+    }
+    .panel-2 .neo-icon-btn {
+      width: 56px; height: 56px; border-radius: 20px;
+    }
+
+    /* Dark Bottom Section - Calendar Strip */
+    .calendar-strip {
+      margin-top: auto;
+      padding: 0 24px 90px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .cal-track {
+      width: 32px; height: 100px;
+      border-radius: 16px;
+      background: rgba(10,10,15,0.2);
+      box-shadow: var(--shadow-inner-dark);
+      position: relative;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 10px 0;
+    }
+    .cal-track.active {
+      background: linear-gradient(180deg, #7879F1 0%, #464796 100%);
+      box-shadow: 0 10px 20px rgba(120,121,241,0.3), inset 2px 2px 5px rgba(255,255,255,0.2);
+      height: 110px;
+    }
+    .cal-num { font-size: 13px; font-weight: 800; color: rgba(255,255,255,0.9); margin-bottom: 2px;}
+    .cal-month { font-size: 8px; font-weight: 600; color: rgba(255,255,255,0.4); text-transform: uppercase;}
+    .cal-track.active .cal-month { color: rgba(255,255,255,0.8); }
+    
+    .cal-indicator {
+      width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,0.2);
+      margin-top: auto;
+    }
+    .cal-track.active .cal-indicator { background: #fff; box-shadow: 0 0 6px #fff; }
+
+    /* --- FAB & Nav --- */
+    .fab-container {
+      position: absolute;
+      bottom: 20px; left: 0; right: 0;
+      display: flex; justify-content: center;
+      z-index: 20;
+    }
+    .fab-btn {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #EBEBF3 0%, #D0D0E5 100%);
+      box-shadow: var(--shadow-neo-light);
+      display: flex; justify-content: center; align-items: center;
+      cursor: pointer;
+    }
+    .fab-inner {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7879F1, #56CCF2);
+      display: flex; justify-content: center; align-items: center;
+      box-shadow: 0 4px 10px rgba(120,121,241,0.5);
+    }
+    .fab-inner svg { width: 14px; stroke: #fff; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+    
+    .panel-2 .fab-btn {
+      background: linear-gradient(135deg, #272A3F, #171826);
+      box-shadow: var(--shadow-neo-dark);
+    }
+    
+    .bottom-nav {
+      position: absolute;
+      bottom: 25px; left: 24px; right: 24px;
+      display: flex; justify-content: space-between;
+      z-index: 10;
+    }
+    .bottom-nav svg { width: 18px; fill: rgba(160, 165, 190, 0.6); }
+    .panel-2 .bottom-nav svg { fill: rgba(255,255,255,0.2); }
+    .nav-active svg { fill: #7879F1 !important; filter: drop-shadow(0 2px 4px rgba(120,121,241,0.4)); }
+
+    /* Utilities */
+    .color-blue { background: linear-gradient(135deg, #56CCF2, #2F80ED); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+  <div class="dashboard-container">
+    
+    <!-- LEFT PANEL wrapper -->
+    <div class="panel-wrapper">
+      <div class="panel panel-1">
+        <!-- SVG Wave Background: Dark Top, Light Bottom -->
+        <svg class="svg-bg" viewBox="0 0 290 600" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="gradDark" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#2A2D43"/>
+              <stop offset="100%" stop-color="#181926"/>
+            </linearGradient>
+          </defs>
+          <!-- Light background base -->
+          <rect width="290" height="600" fill="#EBEBF3"/>
+          <!-- Dark wave overlay -->
+          <!-- It dips down in the middle, creating the beautiful S curve -->
+          <path d="M0,0 L290,0 L290,240 C 200,240 100,380 0,320 Z" fill="url(#gradDark)"/>
+        </svg>
+
+        <div class="panel-content">
+          <!-- Top Nav -->
+          <div class="top-nav">
+            <div class="top-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 19c2.48 0 4.5-2.02 4.5-4.5S19.98 10 17.5 10c-.17 0-.34.02-.51.05C16.5 6.64 13.5 4 10 4 6.13 4 3 7.13 3 11c0 3.87 3.13 7 7 7h7.5z"/></svg>
+            </div>
+            <div class="avatar-bump">
+              <div class="avatar-inner">
+                <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+              </div>
+            </div>
+            <div class="top-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+            </div>
+          </div>
+
+          <!-- Search Box -->
+          <div class="search-box">
+            <input type="text" placeholder="Search...">
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          </div>
+
+          <!-- MyDocs Hero -->
+          <div class="mydocs-hero">
+            <div class="hero-top">
+              <div class="hero-icon">
+                <svg viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+              </div>
+              <div class="hero-text">
+                <h2>MyDocs</h2>
+                <p>3248 files, 26 folders</p>
+              </div>
+            </div>
+            <div class="progress-bar-container">
+              <div class="progress-bar-fill"></div>
+            </div>
+            <div class="storage-text">60 GB free</div>
+          </div>
+
+          <!-- Bottom Grid -->
+          <div class="grid-container">
+            <div class="grid-item">
+              <div class="neo-icon-btn">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="#F2994A"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+              </div>
+              <div class="grid-text"><h3>Assets</h3><p>.folder</p></div>
+            </div>
+            <div class="grid-item">
+              <div class="neo-icon-btn">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="#F2C94C"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+              </div>
+              <div class="grid-text"><h3>Stuff</h3><p>.folder</p></div>
+            </div>
+            <div class="grid-item">
+              <div class="neo-icon-btn">
+                <!-- Mountain icon -->
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#2D9CDB"><path d="M14 6l-3.75 5 2.85 3.8-1.6 1.2C9.81 13.75 7 10 7 10l-6 8h22l-9-12z"/><circle cx="18" cy="6" r="2" fill="#F2C94C"/></svg>
+              </div>
+              <div class="grid-text"><h3>Mountain</h3><p>.jpeg</p></div>
+            </div>
+            <div class="grid-item">
+              <div class="neo-icon-btn">
+                <!-- Sound wave -->
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="#BB6BD9"><path d="M12 3v18h-2V3h2zm-4 4v10H6V7h2zm8 0v10h-2V7h2zm-12 3v4H2v-4h2zm16 0v4h-2v-4h2z"/></svg>
+              </div>
+              <div class="grid-text"><h3>Record</h3><p>.mp3</p></div>
+            </div>
+            <div class="grid-item">
+              <div class="neo-icon-btn">
+                <!-- Chart -->
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="#2F80ED"><path d="M3 3v18h18v-2H5V3H3zm14 10.5l3 3V21H7v-4.5l4-4 4 4 2-3z"/></svg>
+              </div>
+              <div class="grid-text"><h3>Results</h3><p>.xls</p></div>
+            </div>
+            <div class="grid-item">
+              <div class="neo-icon-btn">
+                <!-- Text tool -->
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="#56CCF2"><path d="M2.5 4v3h5v12h3V7h5V4h-13zm19 5h-9v3h3v7h3v-7h3V9z"/></svg>
+              </div>
+              <div class="grid-text"><h3>Project</h3><p>.docx</p></div>
+            </div>
+          </div>
+
+          <!-- Bottom elements -->
+          <div class="fab-container">
+            <div class="fab-btn">
+              <div class="fab-inner">
+                <svg viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              </div>
+            </div>
+          </div>
+          <div class="bottom-nav">
+            <div class="nav-active"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
+            <div><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL wrapper -->
+    <div class="panel-wrapper">
+      <div class="panel panel-2">
+        <!-- SVG Wave Background: Light Top, Dark Bottom -->
+        <svg class="svg-bg" viewBox="0 0 290 600" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="gradDark2" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#2A2D43"/>
+              <stop offset="100%" stop-color="#181926"/>
+            </linearGradient>
+          </defs>
+          <rect width="290" height="600" fill="url(#gradDark2)"/>
+          <!-- Light wave overlay for the top part -->
+          <!-- Dips down gracefully from left to right -->
+          <path d="M0,0 L290,0 L290,380 C 180,380 120,240 0,300 Z" fill="#EBEBF3"/>
+        </svg>
+
+        <div class="panel-content">
+          <!-- Top Nav -->
+          <div class="top-nav">
+            <div class="top-icon dark">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 19c2.48 0 4.5-2.02 4.5-4.5S19.98 10 17.5 10c-.17 0-.34.02-.51.05C16.5 6.64 13.5 4 10 4 6.13 4 3 7.13 3 11c0 3.87 3.13 7 7 7h7.5z"/></svg>
+            </div>
+            <div class="avatar-bump light">
+              <div class="avatar-inner">
+                <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+              </div>
+            </div>
+            <div class="top-icon dark">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+            </div>
+          </div>
+
+          <div class="recents-header">
+            <h3><svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg> Recents</h3>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="#8A8FA8"><path d="M4 4h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 10h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 16h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4z"/></svg>
+          </div>
+
+          <!-- Top Grid -->
+          <div class="grid-container">
+            <div class="grid-item">
+              <div class="neo-icon-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#56CCF2"><path d="M12 3l-8 4 8 4 8-4-8-4zm0 5.5l-3-1.5 3-1.5 3 1.5-3 1.5zm0 13.5l-8-4v-5l8 4 8-4v5l-8 4zm-6-7.5l6 3 6-3v-3l-6 3-6-3v3z"/></svg>
+              </div>
+              <div class="grid-text"><h3>Archive</h3><p>.zip</p></div>
+            </div>
+            <div class="grid-item">
+              <div class="neo-icon-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#F2C94C"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+              </div>
+              <div class="grid-text"><h3>Illustration</h3><p>.eps</p></div>
+            </div>
+            <div class="grid-item">
+              <div class="neo-icon-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#BB6BD9"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
+              </div>
+              <div class="grid-text"><h3>Artwork</h3><p>.psd</p></div>
+            </div>
+            <div class="grid-item">
+              <div class="neo-icon-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#7879F1"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>
+              </div>
+              <div class="grid-text"><h3>Site</h3><p>.html</p></div>
+            </div>
+            <div class="grid-item">
+              <div class="neo-icon-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#2D9CDB"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+              </div>
+              <div class="grid-text"><h3>Filetype</h3><p>.unknown</p></div>
+            </div>
+            <div class="grid-item">
+              <div class="neo-icon-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#FF719A"><path d="M17 1H7c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-2-2-2zm0 18H7V5h10v14zM8 6h8v2H8z"/></svg>
+              </div>
+              <div class="grid-text"><h3>App</h3><p>.xcode</p></div>
+            </div>
+          </div>
+
+          <!-- Bottom Calendar Strip -->
+          <div class="calendar-strip">
+            <div class="cal-track">
+              <span class="cal-num">11</span>
+              <span class="cal-month">AUG</span>
+              <div class="cal-indicator"></div>
+            </div>
+            <div class="cal-track">
+              <span class="cal-num">12</span>
+              <span class="cal-month">AUG</span>
+              <div class="cal-indicator"></div>
+            </div>
+            <div class="cal-track">
+              <span class="cal-num">13</span>
+              <span class="cal-month">AUG</span>
+              <div class="cal-indicator"></div>
+            </div>
+            <div class="cal-track">
+              <span class="cal-num">14</span>
+              <span class="cal-month">AUG</span>
+              <div class="cal-indicator"></div>
+            </div>
+            <div class="cal-track active">
+              <span class="cal-num">15</span>
+              <span class="cal-month">AUG</span>
+              <div class="cal-indicator"></div>
+            </div>
+          </div>
+
+          <div class="fab-container">
+            <div class="fab-btn">
+              <div class="fab-inner">
+                <svg viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              </div>
+            </div>
+          </div>
+          <div class="bottom-nav">
+            <div><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
+            <div><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

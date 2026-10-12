@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>zero-space | Coworking</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-light: #F5F5F3;
+      --bg-dark: #222222;
+      --text-main: #1A1A1A;
+      --text-white: #FFFFFF;
+      --accent: #2A2A2A;
+    }
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-light);
+      color: var(--text-main);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.4;
+    }
+
+    /* Shared Container */
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 0 40px;
+    }
+
+    /* --- HERO SECTION --- */
+    .hero-wrapper {
+      padding: 20px;
+    }
+    .hero {
+      position: relative;
+      border-radius: 24px;
+      overflow: hidden;
+      /* High quality Unsplash placeholder for the modern office */
+      background: url('https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1600&auto=format&fit=crop') center/cover;
+      height: 85vh;
+      min-height: 650px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    
+    /* Dark gradient overlay so text stands out */
+    .hero::after {
+      content: ''; 
+      position: absolute; 
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.6) 100%);
+    }
+    
+    .hero-content {
+      position: relative; 
+      z-index: 10;
+      padding: 40px 60px;
+      height: 100%;
+      display: flex; 
+      flex-direction: column;
+    }
+    
+    header {
+      display: flex;
+      justify-content: space-between;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      opacity: 0.9;
+    }
+    header a { 
+      color: #fff; 
+      text-decoration: none; 
+      transition: opacity 0.3s;
+    }
+    header a:hover { opacity: 0.7; }
+    
+    .hero-middle {
+      margin-top: auto;
+      margin-bottom: 50px;
+    }
+    
+    /* Massive zero-space logo */
+    .logo-huge {
+      font-size: 15vw;
+      font-weight: 800;
+      letter-spacing: -0.06em;
+      line-height: 0.75;
+      color: #fff;
+      margin-bottom: 30px;
+    }
+    
+    .hero-text-row {
+      display: flex;
+      gap: 60px;
+      color: #fff;
+    }
+    .hero-text-left {
+      flex: 1;
+      font-size: 26px;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+    .hero-text-right {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 400;
+      opacity: 0.8;
+      line-height: 1.5;
+      max-width: 500px;
+    }
+
+    /* Booking Bar */
+    .booking-bar {
+      background: #fff;
+      border-radius: 50px;
+      display: flex;
+      padding: 10px;
+      align-items: center;
+      margin: 0 auto;
+      width: 100%;
+      max-width: 800px;
+      position: relative;
+      z-index: 10;
+    }
+    .booking-item {
+      flex: 1;
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center;
+      padding: 0 25px;
+      border-right: 1px solid #EAEAEA;
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+      cursor: pointer;
+    }
+    .booking-item:last-of-type { border-right: none; }
+    .booking-item svg { width: 14px; opacity: 0.5; }
+    
+    .book-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 40px;
+      padding: 16px 45px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .book-btn:hover { background: #000; }
+
+    /* --- SECTION 2: INTRO --- */
+    .intro-section {
+      padding: 120px 0;
+      display: flex;
+      gap: 80px;
+    }
+    .intro-left {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0.6;
+      line-height: 1.4;
+      max-width: 300px;
+    }
+    .intro-right {
+      flex: 2.5;
+      font-size: 34px;
+      font-weight: 600;
+      line-height: 1.25;
+      letter-spacing: -0.02em;
+    }
+
+    /* --- SECTION 3: ROOMS --- */
+    .rooms-section {
+      padding: 0 0 120px 0;
+    }
+    .rooms-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+      margin-bottom: 50px;
+    }
+    .room-card img {
+      width: 100%;
+      height: 320px;
+      object-fit: cover;
+      border-radius: 20px;
+      margin-bottom: 25px;
+    }
+    .room-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .room-desc {
+      font-size: 13px;
+      color: #666;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #D5D5D5;
+      position: relative;
+    }
+    /* Black line under the active/first room */
+    .room-card:nth-child(1) .room-desc::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; left: 0;
+      width: 50%; height: 2px;
+      background: #111;
+    }
+    
+    .view-more-container {
+      display: flex; 
+      justify-content: center;
+    }
+    .view-more-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 40px;
+      padding: 16px 45px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .view-more-btn:hover { background: #000; }
+
+    /* --- SECTION 4: STATS --- */
+    .stats-section {
+      padding: 0 0 120px 0;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 50px;
+    }
+    .stat-number {
+      font-size: 52px;
+      font-weight: 500;
+      letter-spacing: -0.04em;
+      margin-bottom: 15px;
+      display: flex; 
+      align-items: baseline; 
+      gap: 10px;
+    }
+    .stat-label {
+      font-size: 28px;
+      font-weight: 600;
+    }
+    .stat-desc {
+      font-size: 13px;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    /* --- SECTION 5: DARK FOOTER/FEATURES --- */
+    .dark-section {
+      background-color: var(--bg-dark);
+      color: #fff;
+      padding: 120px 40px;
+    }
+    .dark-container {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: flex;
+      gap: 100px;
+      align-items: center;
+    }
+    .dark-left {
+      flex: 1;
+      display: flex; 
+      flex-direction: column; 
+    }
+    .dark-tag {
+      font-size: 12px; 
+      opacity: 0.6; 
+      margin-bottom: 50px;
+    }
+    .dark-title {
+      font-size: 42px; 
+      font-weight: 600; 
+      line-height: 1.15; 
+      letter-spacing: -0.02em;
+      margin-bottom: 40px;
+    }
+    /* Custom dash styling */
+    .dark-title span { opacity: 0.6; }
+    
+    .dark-desc {
+      font-size: 14px; 
+      opacity: 0.7; 
+      line-height: 1.6; 
+      margin-bottom: 50px;
+      max-width: 450px;
+    }
+    .dark-btn {
+      align-self: flex-start;
+      background: #fff;
+      color: #000;
+      border: none;
+      border-radius: 40px;
+      padding: 16px 45px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .dark-btn:hover { background: #E5E5E5; }
+
+    .dark-right {
+      flex: 1.3;
+      position: relative;
+    }
+    .dark-image {
+      width: 100%; 
+      height: 550px; 
+      object-fit: cover; 
+      border-radius: 24px;
+    }
+    .feature-cards {
+      position: absolute;
+      top: 50%;
+      left: -80px; /* Overlap the image */
+      transform: translateY(-50%);
+      display: flex; 
+      flex-direction: column; 
+      gap: 15px;
+    }
+    .feature-card {
+      background: #fff;
+      color: #111;
+      padding: 22px 25px;
+      border-radius: 16px;
+      display: flex; 
+      gap: 18px; 
+      align-items: center;
+      width: 380px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+    }
+    .feature-icon {
+      width: 44px; height: 44px; 
+      background: #F4F4F2; 
+      border-radius: 12px;
+      display: flex; justify-content: center; align-items: center; 
+      flex-shrink: 0;
+    }
+    .feature-icon svg { width: 22px; fill: #111; }
+    .feature-text h4 { 
+      font-size: 15px; 
+      font-weight: 700; 
+      margin-bottom: 6px; 
+    }
+    .feature-text p { 
+      font-size: 11px; 
+      color: #555; 
+      line-height: 1.4; 
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1200px) {
+      .dark-container { flex-direction: column; }
+      .feature-cards { position: relative; left: 0; transform: none; top: -50px; margin: 0 auto; }
+      .dark-image { height: 400px; }
+    }
+    @media (max-width: 900px) {
+      .rooms-grid { grid-template-columns: 1fr; }
+      .stats-section { grid-template-columns: 1fr; gap: 30px; }
+      .intro-section { flex-direction: column; gap: 30px; padding: 60px 0; }
+      .hero-text-row { flex-direction: column; gap: 20px; }
+      .booking-bar { flex-direction: column; border-radius: 20px; }
+      .booking-item { border-right: none; border-bottom: 1px solid #EAEAEA; padding: 15px; width: 100%; }
+      .book-btn { width: 100%; margin-top: 10px; }
+      header { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. HERO SECTION -->
+  <div class="hero-wrapper">
+    <div class="hero">
+      <div class="hero-content">
+        <!-- Top Nav -->
+        <header>
+          <a href="#">Locations</a>
+          <a href="#">Pricing</a>
+          <a href="#">Special offers</a>
+          <a href="#">Collaborations</a>
+          <a href="#">Contacts</a>
+        </header>
+
+        <!-- Huge Text -->
+        <div class="hero-middle">
+          <h1 class="logo-huge">zero-space</h1>
+          <div class="hero-text-row">
+            <div class="hero-text-left">
+              Work, study and set up meetings<br>in cozy & spacious coworking
+            </div>
+            <div class="hero-text-right">
+              Open work areas, private workstations, fully equipped meeting rooms, computer setups, and content creation photo zones — in one place
+            </div>
+          </div>
+        </div>
+
+        <!-- Booking Bar -->
+        <div class="booking-bar">
+          <div class="booking-item">
+            Date & time
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="booking-item">
+            Visitors number
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="booking-item">
+            Room type
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <button class="book-btn">Book now</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- 2. INTRO SECTION -->
+    <div class="intro-section">
+      <div class="intro-left">
+        We provide everything you need to work, create, and grow in one place
+      </div>
+      <div class="intro-right">
+        From private meeting rooms to open coworking areas and aesthetic content spaces — we bring together everything you need for productive work in one modern environment
+      </div>
+    </div>
+
+    <!-- 3. ROOMS SECTION -->
+    <div class="rooms-section">
+      <div class="rooms-grid">
+        <!-- Room 1 -->
+        <div class="room-card">
+          <img src="https://images.unsplash.com/photo-1517502884422-41eaead166d4?q=80&w=600&auto=format&fit=crop" alt="Focus Room">
+          <h3 class="room-title">Focus Room</h3>
+          <p class="room-desc">Private meeting space</p>
+        </div>
+        <!-- Room 2 -->
+        <div class="room-card">
+          <img src="https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?q=80&w=600&auto=format&fit=crop" alt="Community Café">
+          <h3 class="room-title">Community Café</h3>
+          <p class="room-desc">Lounge & coffee area</p>
+        </div>
+        <!-- Room 3 -->
+        <div class="room-card">
+          <img src="https://images.unsplash.com/photo-1616423640778-28d1b53229bd?q=80&w=600&auto=format&fit=crop" alt="Creator Zone">
+          <h3 class="room-title">Creator Zone</h3>
+          <p class="room-desc">Content production studio</p>
+        </div>
+      </div>
+      <div class="view-more-container">
+        <button class="view-more-btn">View more locations</button>
+      </div>
+    </div>
+
+    <!-- 4. STATS SECTION -->
+    <div class="stats-section">
+      <div class="stat-card">
+        <div class="stat-number">1200 <span class="stat-label">m²</span></div>
+        <p class="stat-desc">Spacious coworking environment designed for productive work, meetings and creative collaboration.</p>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">15+ <span class="stat-label">Zones</span></div>
+        <p class="stat-desc">Flexible areas for focused work, networking, brainstorming and content creation.</p>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">200+ <span class="stat-label">Seats</span></div>
+        <p class="stat-desc">Comfortable fully equipped workspaces for freelancers, teams and growing businesses.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. DARK FOOTER/FEATURES -->
+  <div class="dark-section">
+    <div class="dark-container">
+      
+      <!-- Left Info -->
+      <div class="dark-left">
+        <div class="dark-tag">Comfortable spaces for productive days</div>
+        <h2 class="dark-title">Everything you need<br>to work, meet and create<br><span>—</span> in one place</h2>
+        <p class="dark-desc">Flexible workspaces, modern equipment, cozy lounge areas and fully equipped meeting rooms designed for freelancers, teams and creators who value comfort, aesthetics and productivity.</p>
+        <button class="dark-btn">Book a place</button>
+      </div>
+      
+      <!-- Right Image & Overlapping Cards -->
+      <div class="dark-right">
+        <img class="dark-image" src="https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=800&auto=format&fit=crop" alt="Coworking space">
+        
+        <div class="feature-cards">
+          <!-- Card 1 -->
+          <div class="feature-card">
+            <div class="feature-icon">
+              <!-- Workspace Icon -->
+              <svg viewBox="0 0 24 24"><path d="M21 16H3V4h18v12zm0-14H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7v2H8v2h8v-2h-2v-2h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+            </div>
+            <div class="feature-text">
+              <h4>Fully equipped workspaces</h4>
+              <p>Fast Wi-Fi, ergonomic furniture and ready-to-use computer setups for productive work.</p>
+            </div>
+          </div>
+          
+          <!-- Card 2 -->
+          <div class="feature-card">
+            <div class="feature-icon">
+              <!-- Meeting Icon -->
+              <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+            </div>
+            <div class="feature-text">
+              <h4>Meeting & collaboration rooms</h4>
+              <p>Private rooms for calls, presentations, brainstorming sessions and team meetings.</p>
+            </div>
+          </div>
+          
+          <!-- Card 3 -->
+          <div class="feature-card">
+            <div class="feature-icon">
+              <!-- Content Icon -->
+              <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            </div>
+            <div class="feature-text">
+              <h4>Content creation areas</h4>
+              <p>Stylish photo zones and aesthetic interiors perfect for creating social media content.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      
+    </div>
+  </div>
+
+</body>
+</html>

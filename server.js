@@ -1,3 +1,17 @@
+import dns from 'dns';
+
+// Force IPv4 DNS lookup to prevent fetch ETIMEDOUT on IPv6 networks
+const originalLookup = dns.lookup;
+dns.lookup = (hostname, options, callback) => {
+  if (typeof options === 'function') {
+    callback = options;
+    options = {};
+  }
+  options = options || {};
+  options.family = 4;
+  return originalLookup(hostname, options, callback);
+};
+
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
@@ -292,14 +306,16 @@ app.post('/api/process-url', async (req, res) => {
  * Scrapes all images and videos from a URL (Pinterest, Dribbble, website).
  */
 app.post('/api/scrape-media', async (req, res) => {
-  const { url } = req.body;
+  const { url, limit } = req.body;
   if (!url) {
     return res.status(400).json({ success: false, error: 'URL is required.' });
   }
 
   try {
-    console.log(`\n[Media Extraction Endpoint] Triggered for URL: ${url}`);
-    const mediaItems = await extractAllMediaFromUrl(url);
+    const maxItems = limit ? parseInt(limit, 10) : 0;
+    const limitLabel = maxItems > 0 ? `${maxItems} items` : 'Whole Page (Unlimited)';
+    console.log(`\n[Media Extraction Endpoint] Triggered for URL: ${url} (Limit: ${limitLabel})`);
+    const mediaItems = await extractAllMediaFromUrl(url, maxItems);
     res.status(200).json({ success: true, count: mediaItems.length, mediaItems });
   } catch (error) {
     console.error(`[Media Extraction Endpoint ERROR]:`, error.message);

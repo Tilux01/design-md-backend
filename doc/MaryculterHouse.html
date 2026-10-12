@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maryculter House | Hospitality Since 1225</title>
+  
+  <!-- Google Fonts: Playfair Display for Serif, Montserrat for Sans-Serif -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* Reset & Global */
+    * { 
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box; 
+    }
+    
+    body {
+      font-family: 'Montserrat', sans-serif;
+      color: #ffffff;
+      background: #000;
+      height: 100vh;
+      overflow: hidden; /* No scrolling for the initial hero section */
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Cinematic Background Image */
+    .hero-bg {
+      position: absolute;
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%;
+      background: url('maryculter_bg.png') center/cover no-repeat;
+      z-index: 1;
+      filter: contrast(1.1) brightness(0.9);
+      /* Subtle scale animation for a premium feel */
+      animation: zoomBg 20s infinite alternate linear;
+    }
+    
+    @keyframes zoomBg {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.05); }
+    }
+    
+    /* Overlay to ensure white text remains legible */
+    .hero-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      /* A subtle gradient that darkens the top for nav and center for text */
+      background: linear-gradient(
+        to bottom, 
+        rgba(30, 25, 20, 0.7) 0%, 
+        rgba(30, 25, 20, 0.2) 20%, 
+        rgba(30, 25, 20, 0.1) 40%, 
+        rgba(30, 25, 20, 0.3) 70%, 
+        rgba(30, 25, 20, 0.7) 100%
+      );
+      z-index: 2;
+    }
+
+    /* Main Container (On top of background) */
+    .container {
+      position: relative;
+      z-index: 10;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header & Navigation */
+    header {
+      width: 100%;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Top Bar (Socials, Logo, Call to Actions) */
+    .top-bar {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 24px 60px;
+    }
+
+    /* Social Icons */
+    .social-icons {
+      display: flex; 
+      gap: 20px; 
+      align-items: center;
+    }
+    .social-icons svg {
+      width: 14px; 
+      fill: #ffffff; 
+      cursor: pointer; 
+      opacity: 0.8; 
+      transition: opacity 0.3s ease;
+    }
+    .social-icons svg:hover { 
+      opacity: 1; 
+    }
+
+    /* Logo Center */
+    .logo {
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      gap: 6px;
+      cursor: pointer;
+    }
+    .logo-icon {
+      width: 30px; 
+      height: 30px;
+      border: 1.5px solid rgba(255, 255, 255, 0.9);
+      border-radius: 50%;
+      display: flex; 
+      justify-content: center; 
+      align-items: center;
+      position: relative;
+    }
+    /* Pseudo-elements to recreate the abstract lines inside the circle logo */
+    .logo-icon::before {
+      content: '';
+      position: absolute;
+      width: 20px; height: 1.5px;
+      background: #fff;
+      transform: rotate(35deg);
+    }
+    .logo-icon::after {
+      content: '';
+      position: absolute;
+      width: 20px; height: 1.5px;
+      background: #fff;
+      transform: rotate(-35deg);
+    }
+    .logo-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 500;
+      line-height: 1;
+      text-align: center;
+    }
+
+    /* Top Links (Right Side) */
+    .top-links {
+      display: flex; 
+      justify-content: flex-end; 
+      gap: 40px; 
+      align-items: center;
+    }
+    .top-links a {
+      color: #ffffff; 
+      text-decoration: none; 
+      font-size: 10px; 
+      font-weight: 500;
+      letter-spacing: 1.5px; 
+      text-transform: uppercase;
+      opacity: 0.85; 
+      transition: opacity 0.3s ease;
+    }
+    .top-links a:hover { 
+      opacity: 1; 
+    }
+
+    /* Nav Bar (Horizontal Menu) */
+    .nav-bar {
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 24px 40px;
+      display: flex; 
+      justify-content: center; 
+      flex-wrap: wrap;
+      gap: 3.5vw;
+    }
+    .nav-bar a {
+      color: #ffffff; 
+      text-decoration: none; 
+      font-size: 10px; 
+      font-weight: 500;
+      letter-spacing: 1.5px; 
+      text-transform: uppercase;
+      opacity: 0.8; 
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    .nav-bar a:hover { 
+      opacity: 1; 
+    }
+    /* Minimal hover underline */
+    .nav-bar a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px; left: 50%;
+      width: 0; height: 1px;
+      background: #fff;
+      transition: all 0.3s ease;
+      transform: translateX(-50%);
+    }
+    .nav-bar a:hover::after {
+      width: 100%;
+    }
+
+    /* Center Content */
+    .center-content {
+      flex: 1;
+      display: flex; 
+      flex-direction: column; 
+      justify-content: center; 
+      align-items: center;
+      text-align: center;
+      margin-top: -5vh; /* Nudge slightly up to balance the bottom scroll indicator */
+    }
+    
+    .main-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(3rem, 6.5vw, 6.5rem);
+      font-weight: 400;
+      margin-bottom: 25px;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .sub-title {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 60px;
+      opacity: 0.95;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Play Video Button */
+    .play-btn {
+      width: 65px; 
+      height: 65px;
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      display: flex; 
+      justify-content: center; 
+      align-items: center;
+      cursor: pointer; 
+      transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(4px);
+    }
+    .play-btn:hover { 
+      background: rgba(255, 255, 255, 0.15); 
+      transform: scale(1.08); 
+    }
+    .play-btn svg { 
+      width: 14px; 
+      fill: #ffffff; 
+      margin-left: 4px; /* Optically center the triangle */
+      opacity: 0.9;
+    }
+
+    /* Bottom Scroll Indicator */
+    .scroll-indicator {
+      position: absolute;
+      bottom: 0; 
+      left: 50%; 
+      transform: translateX(-50%);
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      gap: 15px;
+    }
+    .scroll-text {
+      font-size: 9px; 
+      font-weight: 500; 
+      letter-spacing: 2.5px; 
+      text-transform: uppercase; 
+      opacity: 0.8;
+    }
+    .scroll-line {
+      width: 1px; 
+      height: 40px; 
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 1100px) {
+      .nav-bar { gap: 2vw; padding: 20px; }
+      .top-bar { padding: 20px 40px; }
+    }
+
+    @media (max-width: 900px) {
+      .top-bar { 
+        grid-template-columns: 1fr 1fr; 
+        padding: 20px; 
+        gap: 15px; 
+      }
+      .social-icons { display: none; }
+      .logo { grid-column: 1 / 3; }
+      .top-links { 
+        grid-column: 1 / 3; 
+        justify-content: center; 
+      }
+      .nav-bar { display: none; /* Hide full nav on mobile, would use hamburger */ }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Cinematic Background Layer -->
+  <div class="hero-bg"></div>
+
+  <!-- Interactive UI Layer -->
+  <div class="container">
+    
+    <!-- Top Header -->
+    <header>
+      <div class="top-bar">
+        
+        <!-- Social Icons (Left) -->
+        <div class="social-icons">
+          <!-- Instagram -->
+          <svg viewBox="0 0 24 24"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.22.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.05.41 2.22.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.22-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.05.36-2.22.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.22-.41-.56-.22-.96-.48-1.38-.9-.42-.42-.68-.82-.9-1.38-.16-.42-.36-1.05-.41-2.22C2.17 15.58 2.16 15.2 2.16 12s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.22.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.05-.36 2.22-.41C8.42 2.17 8.8 2.16 12 2.16M12 0C8.74 0 8.33.01 7.05.07 5.77.13 4.9.31 4.14.6c-.78.3-1.45.72-2.12 1.39C1.35 2.66.93 3.33.63 4.11.33 4.88.15 5.74.1 7.02.04 8.3.02 8.71.02 11.97c0 3.26.02 3.67.08 4.95.05 1.28.23 2.14.53 2.92.3.78.72 1.45 1.39 2.12.67.67 1.34 1.09 2.12 1.39.78.3 1.64.48 2.92.53 1.28.06 1.69.08 4.95.08 3.26 0 3.67-.02 4.95-.08 1.28-.05 2.14-.23 2.92-.53.78-.3 1.45-.72 2.12-1.39.67-.67 1.09-1.34 1.39-2.12.3-.78.48-1.64.53-2.92.06-1.28.08-1.69.08-4.95 0-3.26-.02-3.67-.08-4.95-.05-1.28-.23-2.14-.53-2.92-.3-.78-.72-1.45-1.39-2.12-.67-.67-1.34-1.09-2.12-1.39-.78-.3-1.64-.48-2.92-.53C15.67.01 15.26 0 12 0zm0 5.84A6.16 6.16 0 1018.16 12 6.16 6.16 0 0012 5.84zm0 10.16A4 4 0 1116 12a4 4 0 01-4 4zm5.23-11.23a1.44 1.44 0 11-2.88 0 1.44 1.44 0 012.88 0z"/></svg>
+          <!-- Facebook -->
+          <svg viewBox="0 0 24 24"><path d="M22.67 0H1.33C.6 0 0 .6 0 1.33v21.34C0 23.4.6 24 1.33 24h11.49v-9.28H9.69v-3.62h3.13V8.41c0-3.1 1.89-4.79 4.66-4.79 1.32 0 2.46.1 2.79.14v3.24h-1.92c-1.5 0-1.79.71-1.79 1.76v2.31h3.59l-.47 3.62h-3.12V24h6.12c.73 0 1.33-.6 1.33-1.33V1.33C24 .6 23.4 0 22.67 0z"/></svg>
+        </div>
+
+        <!-- Logo (Center) -->
+        <div class="logo">
+          <div class="logo-icon"></div>
+          <div class="logo-text">Maryculter<br>House</div>
+        </div>
+
+        <!-- Bookings (Right) -->
+        <div class="top-links">
+          <a href="#">Gift Vouchers</a>
+          <a href="#">Book Now</a>
+        </div>
+        
+      </div>
+
+      <!-- Extended Navigation Menu -->
+      <nav class="nav-bar">
+        <a href="#">Stay</a>
+        <a href="#">Dine</a>
+        <a href="#">Packages</a>
+        <a href="#">Experiences</a>
+        <a href="#">Weddings</a>
+        <a href="#">Discover</a>
+        <a href="#">Fishing</a>
+        <a href="#">Festive</a>
+        <a href="#">Meet</a>
+        <a href="#">Our Story</a>
+        <a href="#">News</a>
+        <a href="#">Contact</a>
+        <a href="#">Covid-19</a>
+      </nav>
+    </header>
+
+    <!-- Hero Content -->
+    <div class="center-content">
+      <h1 class="main-title">Hospitality since 1225</h1>
+      <div class="sub-title">Explore Maryculter House</div>
+      
+      <!-- Play Video Button -->
+      <div class="play-btn">
+        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </div>
+    </div>
+
+    <!-- Scroll Hint -->
+    <div class="scroll-indicator">
+      <div class="scroll-text">Scroll to Discover</div>
+      <div class="scroll-line"></div>
+    </div>
+
+  </div>
+
+</body>
+</html>

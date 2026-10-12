@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blvck Tumbler · All Black Everything</title>
+  <!-- Google Fonts: Montserrat + Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ---------- RESET & GLOBAL ---------- */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-canvas: #1c1e22;
+      --bg-canvas-alt: #212328;
+      --text-cream: #f4eae1;
+      --text-muted: #8a8d91;
+      --text-white: #ffffff;
+      --accent-orange: #ff6b00;
+      --glass-bg: rgba(0, 0, 0, 0.25);
+      --glass-border: rgba(255, 255, 255, 0.06);
+      --radius-card: 16px;
+      --radius-pill: 9999px;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-canvas);
+      color: var(--text-white);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ---------- APP CONTAINER ---------- */
+    .app {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--bg-canvas);
+    }
+
+    /* subtle vertical divider to split panes */
+    .app::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 1px;
+      background: rgba(255, 255, 255, 0.02);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* right pane subtle background shift */
+    .app::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      right: 0;
+      width: 50%;
+      background: var(--bg-canvas-alt);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ============================================================
+       2.1 NAVIGATION BAR (TOP)
+       ============================================================ */
+    .navbar-left {
+      position: absolute;
+      top: 40px;
+      left: 60px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-pin {
+      width: 10px;
+      height: 14px;
+      background: var(--accent-orange);
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      flex-shrink: 0;
+      box-shadow: 0 0 12px rgba(255, 107, 0, 0.6);
+    }
+
+    .logo-text {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: var(--text-white);
+      text-transform: uppercase;
+    }
+
+    .navbar-right {
+      position: absolute;
+      top: 40px;
+      right: 60px;
+      z-index: 100;
+      cursor: pointer;
+    }
+
+    .hamburger {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: flex-end;
+    }
+
+    .hamburger span {
+      display: block;
+      height: 2px;
+      background: var(--text-white);
+      border-radius: 1px;
+      transition: width 0.3s ease;
+    }
+
+    .hamburger span:nth-child(1) {
+      width: 26px;
+    }
+
+    .hamburger span:nth-child(2) {
+      width: 18px;
+    }
+
+    .hamburger span:nth-child(3) {
+      width: 22px;
+    }
+
+    .hamburger:hover span {
+      width: 26px;
+    }
+
+    /* ============================================================
+       2.4 FADED BACKGROUND TYPOGRAPHY (RIGHT SIDE)
+       ============================================================ */
+    .faded-bg-text {
+      position: absolute;
+      top: 8%;
+      right: 2%;
+      z-index: 2;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 14vw;
+      font-weight: 800;
+      line-height: 0.9;
+      letter-spacing: -0.04em;
+      color: rgba(255, 255, 255, 0.02);
+      text-align: right;
+      pointer-events: none;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    /* ============================================================
+       2.2 HERO SECTION (LEFT & CENTER)
+       ============================================================ */
+    .hero-left {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 55%;
+      height: 100%;
+      z-index: 20;
+      padding: 0 0 0 60px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .hero-left > * {
+      pointer-events: auto;
+    }
+
+    .main-heading {
+      font-family: 'Montserrat', sans-serif;
+      font-size: clamp(3.5rem, 7vw, 6.5rem);
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      color: var(--text-cream);
+      margin-top: 8vh;
+      z-index: 25;
+      position: relative;
+      pointer-events: none;
+    }
+
+    /* Info card (left) */
+    .info-card-left {
+      position: absolute;
+      bottom: 160px;
+      left: 60px;
+      width: 320px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-card);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 30;
+      pointer-events: auto;
+      transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+
+    .info-card-left:hover {
+      transform: translateY(-3px);
+      border-color: rgba(255, 107, 0, 0.3);
+    }
+
+    .info-card-left .info-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-white);
+      letter-spacing: 0.02em;
+    }
+
+    .info-card-left .info-body {
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 1.7;
+      color: var(--text-muted);
+    }
+
+    /* Explore Now CTA */
+    .explore-cta {
+      position: absolute;
+      bottom: 80px;
+      left: 60px;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      cursor: pointer;
+      background: var(--accent-orange);
+      border-radius: 4px;
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 8px 24px rgba(255, 107, 0, 0.3);
+      pointer-events: auto;
+    }
+
+    .explore-cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(255, 107, 0, 0.45);
+    }
+
+    .explore-cta .cta-text {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-white);
+      padding: 14px 24px;
+      white-space: nowrap;
+    }
+
+    .explore-cta .cta-icon {
+      padding: 14px 16px 14px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: var(--text-white);
+      transition: transform 0.3s ease;
+    }
+
+    .explore-cta:hover .cta-icon {
+      transform: translateX(4px);
+    }
+
+    /* ============================================================
+       2.3 CENTRAL IMAGERY (THE PRODUCT)
+       ============================================================ */
+    .product-showcase {
+      position: absolute;
+      inset: 0;
+      z-index: 15;
+      pointer-events: none;
+    }
+
+    /* Decorative Orange Ring */
+    .orange-ring {
+      position: absolute;
+      top: 32%;
+      left: 52%;
+      transform: translate(-50%, -50%);
+      width: 150px;
+      height: 150px;
+      border: 12px solid var(--accent-orange);
+      border-radius: 50%;
+      background: transparent;
+      z-index: 18;
+      pointer-events: none;
+      box-shadow: 0 0 40px rgba(255, 107, 0, 0.25);
+      animation: pulseRing 4s ease-in-out infinite;
+    }
+
+    @keyframes pulseRing {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      50% { transform: translate(-50%, -50%) scale(1.04); opacity: 0.9; }
+    }
+
+    /* Main Tumbler Image */
+    .tumbler-image {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      height: 88vh;
+      width: auto;
+      max-width: 90vw;
+      object-fit: contain;
+      z-index: 20;
+      pointer-events: none;
+      filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.6));
+      -webkit-mask-image: radial-gradient(circle 40vh at 50% 45%, black 55%, transparent 100%);
+      mask-image: radial-gradient(circle 40vh at 50% 45%, black 55%, transparent 100%);
+    }
+
+    /* Debossed Typography on Tumbler */
+    .debossed-text {
+      position: absolute;
+      top: 52%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 22;
+      text-align: center;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .debossed-text .line-1 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      color: #111111;
+      text-shadow:
+        1px 1px 0px rgba(255, 255, 255, 0.12),
+        -1px -1px 2px rgba(0, 0, 0, 0.85);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .debossed-text .line-2 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      color: #111111;
+      text-shadow:
+        1px 1px 0px rgba(255, 255, 255, 0.12),
+        -1px -1px 2px rgba(0, 0, 0, 0.85);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    /* ============================================================
+       2.4 SECONDARY SECTION (RIGHT SIDE)
+       ============================================================ */
+
+    /* Info Card (Right) with Play Button */
+    .info-card-right {
+      position: absolute;
+      bottom: 160px;
+      right: 60px;
+      width: 320px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-card);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 30;
+      pointer-events: auto;
+      transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+
+    .info-card-right:hover {
+      transform: translateY(-3px);
+      border-color: rgba(255, 107, 0, 0.3);
+    }
+
+    .info-card-right .info-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-white);
+      letter-spacing: 0.02em;
+    }
+
+    .info-card-right .info-body {
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 1.7;
+      color: var(--text-muted);
+    }
+
+    /* Play button row */
+    .play-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      margin-top: 4px;
+    }
+
+    .play-button {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      flex-shrink: 0;
+    }
+
+    .play-button:hover {
+      background: rgba(255, 107, 0, 0.15);
+      border-color: var(--accent-orange);
+      transform: scale(1.08);
+    }
+
+    .play-button svg {
+      width: 14px;
+      height: 14px;
+      fill: var(--accent-orange);
+      margin-left: 2px;
+    }
+
+    /* Right Arrow (Navigation) */
+    .right-arrow {
+      position: absolute;
+      right: 40px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 26px;
+      color: rgba(255, 255, 255, 0.8);
+      cursor: pointer;
+      z-index: 40;
+      transition: transform 0.3s ease, color 0.3s ease;
+      pointer-events: auto;
+      font-weight: 300;
+      line-height: 1;
+    }
+
+    .right-arrow:hover {
+      transform: translateY(-50%) translateX(5px);
+      color: var(--accent-orange);
+    }
+
+    /* Credit Tag */
+    .credit-tag {
+      position: absolute;
+      bottom: 40px;
+      right: 60px;
+      z-index: 40;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.6);
+      cursor: default;
+      pointer-events: auto;
+    }
+
+    /* ============================================================
+       RESPONSIVE
+       ============================================================ */
+    @media (max-width: 1200px) {
+      .main-heading {
+        font-size: 4.5rem;
+      }
+      .info-card-left,
+      .info-card-right {
+        width: 280px;
+        padding: 24px;
+      }
+      .info-card-left { left: 40px; }
+      .info-card-right { right: 40px; }
+      .explore-cta { left: 40px; }
+      .navbar-left { left: 40px; }
+      .navbar-right { right: 40px; }
+      .credit-tag { right: 40px; }
+      .faded-bg-text { font-size: 18vw; }
+      .orange-ring { width: 120px; height: 120px; border-width: 10px; }
+      .debossed-text .line-1 { font-size: 14px; }
+      .debossed-text .line-2 { font-size: 9px; }
+      .tumbler-image { height: 80vh; }
+    }
+
+    @media (max-width: 900px) {
+      .main-heading {
+        font-size: 3.5rem;
+      }
+      .info-card-left,
+      .info-card-right {
+        width: 240px;
+        padding: 20px;
+        bottom: 140px;
+      }
+      .info-card-left { left: 24px; }
+      .info-card-right { right: 24px; }
+      .explore-cta { left: 24px; bottom: 60px; }
+      .navbar-left { left: 24px; top: 24px; }
+      .navbar-right { right: 24px; top: 24px; }
+      .credit-tag { right: 24px; bottom: 24px; }
+      .right-arrow { right: 20px; font-size: 22px; }
+      .orange-ring { width: 100px; height: 100px; border-width: 8px; }
+      .debossed-text .line-1 { font-size: 12px; letter-spacing: 2px; }
+      .debossed-text .line-2 { font-size: 8px; letter-spacing: 2px; }
+      .tumbler-image { height: 70vh; }
+      .faded-bg-text { font-size: 22vw; }
+    }
+
+    @media (max-width: 600px) {
+      .main-heading {
+        font-size: 2.4rem;
+      }
+      .info-card-left,
+      .info-card-right {
+        width: 200px;
+        padding: 16px;
+        bottom: 120px;
+      }
+      .info-card-left { left: 16px; }
+      .info-card-right { right: 16px; }
+      .info-card-left .info-body,
+      .info-card-right .info-body {
+        font-size: 10px;
+        line-height: 1.5;
+      }
+      .info-card-left .info-title,
+      .info-card-right .info-title {
+        font-size: 12px;
+      }
+      .explore-cta { left: 16px; bottom: 50px; }
+      .explore-cta .cta-text { font-size: 9px; padding: 10px 16px; }
+      .navbar-left { left: 16px; top: 16px; }
+      .navbar-right { right: 16px; top: 16px; }
+      .credit-tag { right: 16px; bottom: 16px; font-size: 8px; }
+      .right-arrow { display: none; }
+      .orange-ring { width: 80px; height: 80px; border-width: 6px; top: 35%; }
+      .tumbler-image { height: 55vh; }
+      .debossed-text .line-1 { font-size: 9px; letter-spacing: 1.5px; }
+      .debossed-text .line-2 { font-size: 6px; letter-spacing: 1.5px; }
+      .faded-bg-text { font-size: 28vw; top: 5%; }
+      .play-button { width: 40px; height: 40px; }
+      .play-button svg { width: 11px; height: 11px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+
+    <!-- ============================================================
+         2.4 FADED BACKGROUND TYPOGRAPHY (RIGHT SIDE)
+         ============================================================ -->
+    <div class="faded-bg-text">
+      Blvck<br>Tumbler
+    </div>
+
+    <!-- ============================================================
+         2.1 NAVIGATION BAR (TOP)
+         ============================================================ -->
+    <div class="navbar-left">
+      <span class="logo-pin"></span>
+      <span class="logo-text">GRIDS.</span>
+    </div>
+
+    <div class="navbar-right">
+      <div class="hamburger">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         2.3 CENTRAL IMAGERY (THE PRODUCT)
+         ============================================================ -->
+    <div class="product-showcase">
+      <!-- Decorative Orange Ring -->
+      <div class="orange-ring"></div>
+
+      <!-- Main Tumbler Image -->
+      <img class="tumbler-image" src="black_tumbler.png" alt="Blvck Tumbler · All Black Everything">
+
+      <!-- Debossed Typography on Tumbler -->
+      <div class="debossed-text">
+        <span class="line-1">ALL BLACK EVERYTHING</span>
+        <span class="line-2">EST. 2024</span>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         2.2 HERO SECTION (LEFT & CENTER)
+         ============================================================ -->
+    <div class="hero-left">
+      <h1 class="main-heading">
+        Blvck<br>Tumbler
+      </h1>
+    </div>
+
+    <!-- Info Card (Left) -->
+    <div class="info-card-left">
+      <span class="info-title">Black Lifestyle Lovers.</span>
+      <p class="info-body">
+        Experience what it feels like drinking your favourite beverage out of our premium, all-black mug that was designed with you in mind.
+      </p>
+    </div>
+
+    <!-- Explore Now CTA -->
+    <div class="explore-cta">
+      <span class="cta-text">Explore Now</span>
+      <span class="cta-icon">→</span>
+    </div>
+
+    <!-- ============================================================
+         2.4 SECONDARY SECTION (RIGHT SIDE)
+         ============================================================ -->
+
+    <!-- Info Card (Right) -->
+    <div class="info-card-right">
+      <span class="info-title">The design.</span>
+      <p class="info-body">
+        Lorem ipsum dolor makes our Blvck Tumbler unique and different. Let's watch the video.
+      </p>
+      <div class="play-row">
+        <button class="play-button" aria-label="Play video">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 5V19L19 12L8 5Z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Right Arrow (Navigation) -->
+    <div class="right-arrow">→</div>
+
+    <!-- Credit Tag -->
+    <div class="credit-tag">CREDIT</div>
+
+  </div>
+</body>
+</html>

@@ -1,13 +1,24 @@
 import { GoogleGenAI } from '@google/genai';
 import fs from 'fs';
+import dns from 'dns';
+
+// Force IPv4 DNS lookup to prevent fetch ETIMEDOUT on IPv6 networks
+const originalLookup = dns.lookup;
+dns.lookup = (hostname, options, callback) => {
+  if (typeof options === 'function') {
+    callback = options;
+    options = {};
+  }
+  options = options || {};
+  options.family = 4;
+  return originalLookup(hostname, options, callback);
+};
 
 const GEMINI_MODELS = [
-  'gemini-3.1 pro',
-  'gemini-3.5-flash-lite',
-  'gemini-3.5-flash',
   'gemini-3.6-flash',
-  'gemini-3.7-flash',
-  'gemini-3.8-flash'
+  'gemini-3.8-flash',
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-pro-preview'
 ];
 
 function sleep(ms) {
@@ -45,40 +56,53 @@ export async function extractDesignSpec(filesInput, optionalMimeType) {
 
   for (const fileObj of files) {
     const { filePath, mimeType } = fileObj;
-    console.log(`[Gemini Service] Uploading media asset (${mimeType}): ${filePath}...`);
-
-    let uploadResult = null;
-    try {
-      uploadResult = await ai.files.upload({
-        file: filePath,
-        mimeType: mimeType
+    
+    // For images, use ultra-fast inline base64 encoding (Zero staging upload round-trips)
+    if (mimeType.startsWith('image/')) {
+      console.log(`[Gemini Service] Encoding image via high-speed inline data (${mimeType}): ${filePath}`);
+      const fileBuffer = fs.readFileSync(filePath);
+      uploadedParts.push({
+        inlineData: {
+          data: fileBuffer.toString('base64'),
+          mimeType: mimeType
+        }
       });
-    } catch (err) {
-      console.warn('[Gemini Service] Retrying upload with config wrapper...', err.message);
-      uploadResult = await ai.files.upload({
-        file: filePath,
-        config: { mimeType }
-      });
-    }
-
-    const fileUri = uploadResult.uri || uploadResult.file?.uri;
-    const effectiveMimeType = uploadResult.mimeType || uploadResult.file?.mimeType || mimeType;
-
-    if (uploadResult.name || uploadResult.file?.name) {
-      uploadedNames.push(uploadResult.name || uploadResult.file.name);
-    }
-
-    console.log(`[Gemini Service] File uploaded successfully. URI: ${fileUri}`);
-
-    uploadedParts.push({
-      fileData: {
-        fileUri: fileUri,
-        mimeType: effectiveMimeType
+    } else {
+      // For video files, upload via Gemini File API
+      console.log(`[Gemini Service] Uploading video asset (${mimeType}): ${filePath}...`);
+      let uploadResult = null;
+      try {
+        uploadResult = await ai.files.upload({
+          file: filePath,
+          mimeType: mimeType
+        });
+      } catch (err) {
+        console.warn('[Gemini Service] Retrying video upload with config wrapper...', err.message);
+        uploadResult = await ai.files.upload({
+          file: filePath,
+          config: { mimeType }
+        });
       }
-    });
+
+      const fileUri = uploadResult.uri || uploadResult.file?.uri;
+      const effectiveMimeType = uploadResult.mimeType || uploadResult.file?.mimeType || mimeType;
+
+      if (uploadResult.name || uploadResult.file?.name) {
+        uploadedNames.push(uploadResult.name || uploadResult.file.name);
+      }
+
+      console.log(`[Gemini Service] Video uploaded successfully. URI: ${fileUri}`);
+
+      uploadedParts.push({
+        fileData: {
+          fileUri: fileUri,
+          mimeType: effectiveMimeType
+        }
+      });
+    }
   }
 
-  const prompt = `please i want you to write exact design.md for this media. i want it to be exact perfect clone, but if make sure you ommit frames or backgrounds of the design itself if there, i want full screen. exactly, everything matching, please talk about the fonts being used and fallback if unable too reach. please i want it detailed and everything needed or in the media is discussed and if there is animation too`;
+  const prompt = `please i want you to write exact design.md for this media. i want it to be exact perfect clone, but if make sure you ommit frames or backgrounds of the design itself if there, i want full screen. exactly, everything matching, please talk about the fonts being used and fallback if unable too reach. please i want it detailed and everything needed or in the media is discussed. also if there are images, describe the images instead of guiding on how to draw the image using code and also specify if the image is backgroundless and describe the image well and proper placement and rotation. please don't miss any detail`;
 
   let lastError = null;
   let markdownText = null;
@@ -122,7 +146,7 @@ export async function extractDesignSpec(filesInput, optionalMimeType) {
     if (markdownText) break;
   }
 
-  // Clean up files from Gemini remote storage
+  // Clean up remote video files from Gemini remote storage
   for (const name of uploadedNames) {
     try {
       await ai.files.delete({ name: name });
@@ -130,7 +154,9 @@ export async function extractDesignSpec(filesInput, optionalMimeType) {
       console.warn(`[Gemini Service] Could not delete remote file ${name}:`, deleteErr.message);
     }
   }
-  console.log('[Gemini Service] Remote staging media purged from Gemini servers.');
+  if (uploadedNames.length > 0) {
+    console.log('[Gemini Service] Remote staging media purged from Gemini servers.');
+  }
 
   if (!markdownText) {
     throw new Error(`All Gemini models failed. Last error: ${lastError?.message}`);

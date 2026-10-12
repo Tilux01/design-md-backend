@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Helious | Global Collective</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <style>
+    /* Reset & Global */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      color: #F1F0EA; /* Creamy off-white */
+      background: #000;
+      height: 100vh;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Background Image */
+    .hero-bg {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: url('helious_bg.png') center/cover no-repeat;
+      z-index: 1;
+      /* Optional subtle scale animation for a lived-in feel */
+      animation: driftBg 30s infinite alternate linear;
+    }
+    
+    @keyframes driftBg {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.05); }
+    }
+
+    /* Dark gradient at the bottom so the white text pops */
+    .hero-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom, 
+        rgba(0,0,0,0.5) 0%, 
+        rgba(0,0,0,0) 25%, 
+        rgba(0,0,0,0.2) 60%, 
+        rgba(0,0,0,0.9) 100%
+      );
+      z-index: 2;
+      pointer-events: none;
+    }
+    
+    /* Top Navigation Tab */
+    header {
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      background: rgba(15, 15, 15, 0.4);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 18px 50px;
+      border-bottom-left-radius: 20px;
+      border-bottom-right-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-top: none;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    nav {
+      display: flex;
+      gap: 50px;
+    }
+    nav a {
+      color: #F1F0EA;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: -0.2px;
+      opacity: 0.8;
+      transition: opacity 0.3s ease, text-shadow 0.3s ease;
+    }
+    nav a:hover { 
+      opacity: 1; 
+      text-shadow: 0 0 15px rgba(255,255,255,0.4); 
+    }
+
+    /* Main Container */
+    .container {
+      position: relative;
+      z-index: 10;
+      height: 100%;
+      display: flex;
+      align-items: flex-end;
+      padding: 50px 70px;
+    }
+
+    /* Bottom Left: Huge Typography */
+    .title-wrapper {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: -3vh; /* optically adjust bottom spacing */
+    }
+    .main-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(8rem, 18vw, 18rem);
+      font-weight: 600;
+      letter-spacing: -0.06em;
+      line-height: 0.75;
+      color: #F1F0EA;
+      text-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+    .asterisk {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(3rem, 6vw, 6rem);
+      font-weight: 600;
+      margin-top: -15px;
+      margin-left: 5px;
+      color: #F1F0EA;
+      text-shadow: 0 5px 20px rgba(0,0,0,0.5);
+    }
+
+    /* Bottom Right: Content & CTA */
+    .content-right {
+      margin-left: auto;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 35px;
+      padding-bottom: 25px;
+    }
+    
+    .description {
+      font-size: 14.5px;
+      line-height: 1.5;
+      font-weight: 400;
+      color: rgba(241, 240, 234, 0.85);
+      letter-spacing: -0.2px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+    }
+
+    /* Pill Button */
+    .cta-btn {
+      align-self: flex-start;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: #F1F0EA;
+      color: #111;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 8px 8px 26px;
+      cursor: pointer;
+      font-family: 'Outfit', sans-serif;
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), background 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+    .cta-btn:hover {
+      transform: translateY(-3px);
+      background: #ffffff;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+    }
+    
+    .arrow-circle {
+      width: 36px; height: 36px;
+      background: #111;
+      border-radius: 50%;
+      display: flex; justify-content: center; align-items: center;
+      transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    .cta-btn:hover .arrow-circle {
+      transform: translateX(4px);
+    }
+    .arrow-circle svg {
+      width: 16px; 
+      fill: none; 
+      stroke: #F1F0EA; 
+      stroke-width: 2.2; 
+      stroke-linecap: round; 
+      stroke-linejoin: round;
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 1000px) {
+      .container { flex-direction: column; align-items: flex-start; gap: 40px; padding: 40px; }
+      .title-wrapper { margin-bottom: 0; }
+      .content-right { margin-left: 0; padding-bottom: 0; }
+      nav { gap: 20px; }
+      header { width: 90%; max-width: 500px; padding: 15px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="hero-bg"></div>
+
+  <!-- Floating Top Navigation -->
+  <header>
+    <nav>
+      <a href="#">About us</a>
+      <a href="#">Community</a>
+      <a href="#">Residencies</a>
+      <a href="#">Courses</a>
+      <a href="#">Questions</a>
+    </nav>
+  </header>
+
+  <div class="container">
+    
+    <!-- Left: Massive Typography -->
+    <div class="title-wrapper">
+      <h1 class="main-title">Helious</h1>
+      <span class="asterisk">*</span>
+    </div>
+
+    <!-- Right: Text & CTA -->
+    <div class="content-right">
+      <p class="description">
+        Helious is a global collective of digital nomads, creatives, and independent makers who choose a different rhythm of life - one driven not by cities, deadlines, and noise, but by curiosity.
+      </p>
+      
+      <button class="cta-btn">
+        Get started
+        <div class="arrow-circle">
+          <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+      </button>
+    </div>
+
+  </div>
+
+</body>
+</html>

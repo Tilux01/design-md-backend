@@ -1,0 +1,1615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A-News · Train Smart, Recover Harder</title>
+  
+  <!-- Google Fonts: Plus Jakarta Sans & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    /* ==========================================================================
+       1. CSS RESET & DESIGN SYSTEM VARIABLES
+       ========================================================================== */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      /* Palette Tokens */
+      --bg-canvas: #7e8b98;
+      --bg-canvas-gradient: linear-gradient(135deg, #717d89 0%, #8996a3 50%, #6e7984 100%);
+      
+      --app-bg: #1c1d20;
+      --app-surface: #242529;
+      --app-surface-subtle: #2b2c31;
+      --app-border: rgba(255, 255, 255, 0.08);
+      --app-border-focus: rgba(255, 255, 255, 0.25);
+      
+      /* Accent Colors */
+      --accent-yellow: #feffd5;
+      --accent-yellow-hover: #f5f6bd;
+      --accent-yellow-text: #141517;
+      
+      --accent-lime: #cef57b;
+      --accent-lime-hover: #bde766;
+      --accent-lime-text: #131b08;
+      
+      --accent-cream-btn: #fdfae2;
+      --accent-cream-text: #1c1d20;
+      
+      /* Text Colors */
+      --text-primary: #ffffff;
+      --text-secondary: #9ea0a6;
+      --text-tertiary: #6e7077;
+      --text-dark: #141517;
+      --text-dark-muted: #4e5056;
+      
+      /* Radii */
+      --radius-app: 28px;
+      --radius-card: 22px;
+      --radius-card-sm: 16px;
+      --radius-pill: 9999px;
+      
+      /* Shadows */
+      --shadow-app: 0 40px 100px -20px rgba(0, 0, 0, 0.65), 0 20px 40px -15px rgba(0, 0, 0, 0.4);
+      --shadow-card: 0 12px 30px -8px rgba(0, 0, 0, 0.35);
+      --shadow-pop: 0 16px 36px rgba(0, 0, 0, 0.45);
+      
+      /* Transitions */
+      --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+      --trans-fast: 0.2s var(--ease-smooth);
+      --trans-mid: 0.35s var(--ease-smooth);
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-canvas-gradient);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      position: relative;
+    }
+
+    /* ==========================================================================
+       2. POSTER VIEWPORT BACKGROUND (ATHLETIC CANVAS)
+       ========================================================================== */
+    .viewport-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .canvas-athlete-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('athlete_poster.png');
+      background-size: cover;
+      background-position: center top;
+      background-repeat: no-repeat;
+      opacity: 0.95;
+      filter: saturate(1.05);
+      transform: scale(1.01);
+      transition: transform 1.2s var(--ease-smooth), opacity 0.5s ease;
+    }
+
+    /* Subtle ambient lighting vignette over the poster */
+    .canvas-overlay {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 50%, rgba(20, 22, 26, 0.1) 0%, rgba(15, 17, 20, 0.45) 100%);
+    }
+
+    /* Canvas footer typography in bottom right */
+    .canvas-footer-quote {
+      position: absolute;
+      bottom: 40px;
+      right: 50px;
+      text-align: right;
+      z-index: 2;
+      pointer-events: auto;
+      max-width: 440px;
+      animation: fadeIn 1.2s ease-out;
+    }
+
+    .canvas-footer-quote h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 20px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.88);
+      letter-spacing: -0.3px;
+      margin-bottom: 6px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+    }
+
+    .canvas-footer-quote p {
+      font-size: 13px;
+      line-height: 1.5;
+      color: rgba(255, 255, 255, 0.65);
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    }
+
+    /* ==========================================================================
+       3. TOP CONTROL BAR (VIEW MODES & CART PREVIEW)
+       ========================================================================== */
+    .top-toolbar {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(28, 29, 32, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 6px 10px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .toolbar-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: all var(--trans-fast);
+    }
+
+    .toolbar-btn:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .toolbar-btn.active {
+      background: rgba(255, 255, 255, 0.15);
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .cart-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: var(--accent-lime);
+      color: var(--accent-lime-text);
+      border-radius: var(--radius-pill);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform var(--trans-fast), background var(--trans-fast);
+    }
+
+    .cart-indicator:hover {
+      transform: scale(1.04);
+      background: var(--accent-lime-hover);
+    }
+
+    .cart-badge-count {
+      background: var(--accent-lime-text);
+      color: var(--accent-lime);
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+    }
+
+    /* ==========================================================================
+       4. MAIN APP CONTAINER (THE FLOATING DASHBOARD)
+       ========================================================================== */
+    .main-wrapper {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 1060px;
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.5s var(--ease-smooth);
+    }
+
+    /* Fullscreen layout mode modifier */
+    body.mode-fullscreen .main-wrapper {
+      max-width: 100%;
+      height: 100vh;
+      padding: 0;
+    }
+
+    body.mode-fullscreen .app-container {
+      border-radius: 0;
+      height: 100vh;
+      max-width: 100%;
+      box-shadow: none;
+      border: none;
+    }
+
+    body.mode-fullscreen .canvas-footer-quote {
+      display: none;
+    }
+
+    .app-container {
+      width: 100%;
+      background: var(--app-bg);
+      border-radius: var(--radius-app);
+      border: 1px solid var(--app-border);
+      box-shadow: var(--shadow-app);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.4s var(--ease-smooth);
+      position: relative;
+    }
+
+    /* ==========================================================================
+       5. TOP NAVIGATION BAR (INSIDE APP)
+       ========================================================================== */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 24px;
+      background: #25262a;
+      border-bottom: 1px solid var(--app-border);
+      gap: 16px;
+    }
+
+    .nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      list-style: none;
+    }
+
+    .nav-tab-item {
+      position: relative;
+    }
+
+    .nav-tab-link {
+      text-decoration: none;
+      color: var(--text-secondary);
+      font-size: 13.5px;
+      font-weight: 500;
+      transition: color var(--trans-fast);
+      display: inline-block;
+      padding: 6px 0;
+    }
+
+    .nav-tab-link:hover {
+      color: var(--text-primary);
+    }
+
+    .nav-tab-item.active .nav-tab-link {
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+
+    /* Active indicator dot under tab */
+    .nav-tab-item.active .nav-tab-link::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px;
+      height: 4px;
+      background: var(--text-primary);
+      border-radius: 50%;
+    }
+
+    /* Search Bar */
+    .search-container {
+      flex: 1;
+      max-width: 320px;
+      position: relative;
+    }
+
+    .search-box {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #1c1d20;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: var(--radius-pill);
+      padding: 8px 16px;
+      transition: border-color var(--trans-fast), background var(--trans-fast);
+    }
+
+    .search-box:focus-within {
+      border-color: var(--app-border-focus);
+      background: #16171a;
+    }
+
+    .search-icon {
+      width: 15px;
+      height: 15px;
+      fill: none;
+      stroke: var(--text-tertiary);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+
+    .search-input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 12.5px;
+      width: 100%;
+    }
+
+    .search-input::placeholder {
+      color: var(--text-tertiary);
+    }
+
+    /* Live Search Dropdown */
+    .search-results-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      right: 0;
+      background: #25262a;
+      border: 1px solid var(--app-border);
+      border-radius: 14px;
+      box-shadow: var(--shadow-pop);
+      padding: 8px;
+      display: none;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 50;
+    }
+
+    .search-results-dropdown.active {
+      display: flex;
+      animation: slideDown 0.2s var(--ease-smooth);
+    }
+
+    .search-result-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 12px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background var(--trans-fast), color var(--trans-fast);
+    }
+
+    .search-result-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-primary);
+    }
+
+    /* Create Post Button */
+    .btn-create-post {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent-cream-btn);
+      color: var(--accent-cream-text);
+      border: none;
+      padding: 7px 18px 7px 8px;
+      border-radius: var(--radius-pill);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform var(--trans-fast), background var(--trans-fast), box-shadow var(--trans-fast);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    }
+
+    .btn-create-post:hover {
+      transform: translateY(-1px);
+      background: #ffffff;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    }
+
+    .btn-create-post .plus-circle {
+      width: 24px;
+      height: 24px;
+      background: #242529;
+      color: #feffd5;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      line-height: 1;
+      font-weight: 400;
+    }
+
+    /* ==========================================================================
+       6. APP MAIN GRID LAYOUT (LEFT & RIGHT PANES)
+       ========================================================================== */
+    .app-body {
+      padding: 18px;
+      display: grid;
+      grid-template-columns: 1.02fr 1.18fr;
+      gap: 16px;
+    }
+
+    /* ==========================================================================
+       7. LEFT COLUMN: RUNNER CARD + WIDGETS + RECOMMENDED
+       ========================================================================== */
+    .left-column {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Top Row in Left Column */
+    .left-top-row {
+      display: grid;
+      grid-template-columns: 1fr 92px;
+      gap: 14px;
+      min-height: 168px;
+    }
+
+    /* Feature Runner Card */
+    .runner-card {
+      position: relative;
+      border-radius: var(--radius-card-sm);
+      overflow: hidden;
+      cursor: pointer;
+      background: #23252a;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 16px;
+      transition: transform var(--trans-mid), box-shadow var(--trans-mid);
+    }
+
+    .runner-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45);
+    }
+
+    .runner-card-bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('runner_card_bg.png');
+      background-size: cover;
+      background-position: center;
+      transition: transform 0.8s var(--ease-smooth);
+    }
+
+    .runner-card:hover .runner-card-bg {
+      transform: scale(1.05);
+    }
+
+    .runner-card-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(16, 17, 20, 0.95) 0%, rgba(16, 17, 20, 0.4) 60%, transparent 100%);
+    }
+
+    .runner-card-content {
+      position: relative;
+      z-index: 2;
+      padding-right: 32px;
+    }
+
+    .runner-card-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.25;
+      color: #ffffff;
+      margin-bottom: 5px;
+    }
+
+    .runner-card-desc {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .runner-card-arrow {
+      position: absolute;
+      bottom: 14px;
+      right: 14px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.16);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 13px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: transform var(--trans-fast), background var(--trans-fast);
+      z-index: 3;
+    }
+
+    .runner-card:hover .runner-card-arrow {
+      transform: translate(2px, -2px) scale(1.08);
+      background: rgba(255, 255, 255, 0.35);
+    }
+
+    /* Stacked Right Widgets */
+    .stacked-widgets {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .widget-metric-card {
+      flex: 1;
+      background: #2a2b30;
+      border-radius: var(--radius-card-sm);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      cursor: pointer;
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: transform var(--trans-fast), background var(--trans-fast), border-color var(--trans-fast);
+    }
+
+    .widget-metric-card:hover {
+      transform: translateY(-2px);
+      background: #31333a;
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .widget-metric-number {
+      font-family: 'Outfit', sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1;
+      margin-bottom: 3px;
+    }
+
+    .widget-metric-label {
+      font-size: 10px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .widget-hydration-card {
+      flex: 1;
+      background: #2a2b30;
+      border-radius: var(--radius-card-sm);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      cursor: pointer;
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: transform var(--trans-fast), background var(--trans-fast), border-color var(--trans-fast);
+    }
+
+    .widget-hydration-card:hover {
+      transform: translateY(-2px);
+      background: #31333a;
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Shaker bottle SVG icon */
+    .bottle-svg-icon {
+      width: 22px;
+      height: 38px;
+      margin-bottom: 2px;
+    }
+
+    .widget-hydration-status {
+      font-size: 8px;
+      color: var(--accent-lime);
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* ==========================================================================
+       8. RECOMMENDED CARD (PALETTE: PALE BUTTER-YELLOW #FEFFD5)
+       ========================================================================== */
+    .recommended-card {
+      background: var(--accent-yellow);
+      border-radius: var(--radius-card);
+      padding: 24px 26px;
+      color: var(--accent-yellow-text);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 290px;
+      position: relative;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      transition: transform var(--trans-mid), box-shadow var(--trans-mid);
+    }
+
+    .recommended-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.3);
+    }
+
+    .recommended-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .recommended-tag {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent-yellow-text);
+      letter-spacing: -0.2px;
+    }
+
+    .recommended-menu-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 4px;
+      border-radius: 4px;
+      transition: background var(--trans-fast);
+    }
+
+    .recommended-menu-btn:hover {
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    .recommended-menu-dot {
+      width: 3.5px;
+      height: 3.5px;
+      background: var(--accent-yellow-text);
+      border-radius: 50%;
+    }
+
+    .recommended-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 21px;
+      font-weight: 700;
+      line-height: 1.22;
+      letter-spacing: -0.4px;
+      color: var(--accent-yellow-text);
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: color var(--trans-fast);
+    }
+
+    .recommended-title:hover {
+      color: #3b3a1a;
+    }
+
+    .recommended-excerpt {
+      font-size: 11.5px;
+      line-height: 1.5;
+      color: var(--text-dark-muted);
+      margin-bottom: 20px;
+    }
+
+    .recommended-action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 22px;
+    }
+
+    .btn-read-more {
+      background: transparent;
+      color: var(--accent-yellow-text);
+      border: 1.2px solid var(--accent-yellow-text);
+      padding: 7px 18px;
+      border-radius: var(--radius-pill);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--trans-fast);
+    }
+
+    .btn-read-more:hover {
+      background: var(--accent-yellow-text);
+      color: var(--accent-yellow);
+    }
+
+    .btn-round-arrow {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1.2px solid var(--accent-yellow-text);
+      background: transparent;
+      color: var(--accent-yellow-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all var(--trans-fast);
+    }
+
+    .btn-round-arrow:hover {
+      background: var(--accent-yellow-text);
+      color: var(--accent-yellow);
+      transform: rotate(45deg);
+    }
+
+    /* Bottom footer divider & next preview */
+    .recommended-footer {
+      border-top: 1px solid rgba(20, 21, 23, 0.12);
+      padding-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+    }
+
+    .next-article-title {
+      color: rgba(20, 21, 23, 0.65);
+      font-weight: 500;
+      cursor: pointer;
+      transition: color var(--trans-fast);
+    }
+
+    .next-article-title:hover {
+      color: var(--accent-yellow-text);
+      text-decoration: underline;
+    }
+
+    .next-article-link {
+      color: var(--accent-yellow-text);
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: transform var(--trans-fast);
+    }
+
+    .next-article-link:hover {
+      transform: translateX(2px);
+    }
+
+    /* ==========================================================================
+       9. RIGHT COLUMN: HERO ATHLETE CARD & FLOATING PRODUCT
+       ========================================================================== */
+    .right-column {
+      position: relative;
+    }
+
+    .hero-athlete-card {
+      position: relative;
+      height: 100%;
+      min-height: 480px;
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      background: #2c2f35;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px;
+    }
+
+    .hero-athlete-bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('hero_athlete.png');
+      background-size: cover;
+      background-position: center;
+      transition: transform 0.8s var(--ease-smooth);
+    }
+
+    .hero-athlete-card:hover .hero-athlete-bg {
+      transform: scale(1.025);
+    }
+
+    .hero-athlete-gradient {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.25) 0%,
+        transparent 30%,
+        rgba(0, 0, 0, 0.4) 100%
+      );
+    }
+
+    /* Top Right "Add to cart" Button */
+    .btn-add-cart-top {
+      position: relative;
+      z-index: 10;
+      align-self: flex-end;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent-lime);
+      color: var(--accent-lime-text);
+      border: none;
+      padding: 6px 14px 6px 16px;
+      border-radius: var(--radius-pill);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+      transition: all var(--trans-fast);
+    }
+
+    .btn-add-cart-top:hover {
+      background: var(--accent-lime-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    .btn-add-cart-top .cart-plus-icon {
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    /* Floating "Discover new product" Mini Card */
+    .mini-product-card {
+      position: relative;
+      z-index: 10;
+      align-self: flex-end;
+      width: 175px;
+      background: rgba(22, 23, 26, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 18px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-pop);
+      transition: transform var(--trans-mid), box-shadow var(--trans-mid);
+      cursor: pointer;
+    }
+
+    .mini-product-card:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.55);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .mini-product-image-wrap {
+      width: 100%;
+      height: 90px;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #141517;
+      position: relative;
+    }
+
+    .mini-product-img {
+      max-height: 80px;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+      transition: transform var(--trans-fast);
+    }
+
+    .mini-product-card:hover .mini-product-img {
+      transform: scale(1.08);
+    }
+
+    .mini-product-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.25;
+      margin-bottom: 10px;
+    }
+
+    .btn-shop-now {
+      background: #2a2b30;
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-pill);
+      padding: 6px 12px;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all var(--trans-fast);
+      width: 100%;
+    }
+
+    .btn-shop-now:hover {
+      background: #ffffff;
+      color: #141517;
+    }
+
+    /* ==========================================================================
+       10. INTERACTIVE MODALS & DRAWERS
+       ========================================================================== */
+    /* Modal Backdrop */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 11, 14, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    .modal-box {
+      background: #222327;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 24px;
+      width: 100%;
+      max-width: 560px;
+      padding: 28px;
+      color: #ffffff;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+      transform: translateY(20px) scale(0.96);
+      transition: transform 0.3s var(--ease-smooth);
+      position: relative;
+    }
+
+    .modal-backdrop.active .modal-box {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 32px;
+      height: 32px;
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      border-radius: 50%;
+      color: #ffffff;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background var(--trans-fast);
+    }
+
+    .modal-close-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .modal-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .modal-subtitle {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    /* Quick Toast Notification */
+    .toast-msg {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: #23252a;
+      border: 1px solid var(--accent-lime);
+      color: #ffffff;
+      padding: 12px 24px;
+      border-radius: var(--radius-pill);
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      z-index: 2000;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.35s var(--ease-smooth);
+    }
+
+    .toast-msg.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* Keyframes */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ==========================================================================
+       11. RESPONSIVE MEDIA QUERIES
+       ========================================================================== */
+    @media (max-width: 900px) {
+      .app-body {
+        grid-template-columns: 1fr;
+      }
+      .right-column {
+        min-height: 420px;
+      }
+      .canvas-footer-quote {
+        display: none;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .main-wrapper {
+        padding: 10px;
+      }
+      .app-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .nav-tabs {
+        overflow-x: auto;
+        padding-bottom: 4px;
+      }
+      .search-container {
+        max-width: 100%;
+      }
+      .left-top-row {
+        grid-template-columns: 1fr;
+      }
+      .stacked-widgets {
+        flex-direction: row;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==========================================================================
+       VIEWPORT BACKGROUND ATHLETIC CANVAS (PRESENTATION POSTER)
+       ========================================================================== -->
+  <div class="viewport-canvas">
+    <div class="canvas-athlete-bg" id="canvasBg"></div>
+    <div class="canvas-overlay"></div>
+  </div>
+
+  <!-- Bottom-right Presentation Tagline -->
+  <div class="canvas-footer-quote">
+    <h3>Train smart, recover harder, live better</h3>
+    <p>Personal project created to sharpen my design skills and push them to a more polished, professional level.</p>
+  </div>
+
+  <!-- Top Floating Toolbar -->
+  <header class="top-toolbar">
+    <button class="toolbar-btn active" id="btnModeShowcase">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"/></svg>
+      Showcase Frame
+    </button>
+    <button class="toolbar-btn" id="btnModeFull">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      Fullscreen
+    </button>
+    <div class="cart-indicator" id="cartPreviewBtn">
+      <span>Cart</span>
+      <div class="cart-badge-count" id="cartBadgeCount">0</div>
+    </div>
+  </header>
+
+  <!-- ==========================================================================
+       MAIN APP INTERFACE: FLOATING DASHBOARD
+       ========================================================================== -->
+  <main class="main-wrapper">
+    <div class="app-container" id="appCard">
+      
+      <!-- App Header Nav -->
+      <nav class="app-header" aria-label="Main Navigation">
+        <ul class="nav-tabs" role="tablist">
+          <li class="nav-tab-item active" role="presentation">
+            <a href="#a-news" class="nav-tab-link" role="tab" aria-selected="true">A-News</a>
+          </li>
+          <li class="nav-tab-item" role="presentation">
+            <a href="#training" class="nav-tab-link" role="tab" aria-selected="false">Training</a>
+          </li>
+          <li class="nav-tab-item" role="presentation">
+            <a href="#programs" class="nav-tab-link" role="tab" aria-selected="false">Programs</a>
+          </li>
+          <li class="nav-tab-item" role="presentation">
+            <a href="#nutrition" class="nav-tab-link" role="tab" aria-selected="false">Nutrition</a>
+          </li>
+          <li class="nav-tab-item" role="presentation">
+            <a href="#shop" class="nav-tab-link" role="tab" aria-selected="false">Shop</a>
+          </li>
+          <li class="nav-tab-item" role="presentation">
+            <a href="#docs" class="nav-tab-link" role="tab" aria-selected="false">Docs</a>
+          </li>
+        </ul>
+
+        <!-- Search Bar with Live Suggestions -->
+        <div class="search-container">
+          <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="search-input" id="workoutSearchInput" placeholder="Search workouts..." autocomplete="off">
+          </div>
+          <div class="search-results-dropdown" id="searchResultsDropdown">
+            <div class="search-result-item" data-query="How to Build Strength">⚡ How to Build Strength Without Burning Out</div>
+            <div class="search-result-item" data-query="Community Lift-Off">🏋️ The Community Lift-Off Highlights</div>
+            <div class="search-result-item" data-query="Supplements">💊 The Truth About Supplements Guide</div>
+            <div class="search-result-item" data-query="HIIT 30 min">⏱️ 30 Min HIIT Endurance Sprint</div>
+          </div>
+        </div>
+
+        <!-- Create Post Action -->
+        <button class="btn-create-post" id="btnOpenCreatePost">
+          <span class="plus-circle">+</span>
+          Create post
+        </button>
+      </nav>
+
+      <!-- App Main Content Grid -->
+      <div class="app-body">
+        
+        <!-- ====================================================================
+             LEFT COLUMN
+             ==================================================================== -->
+        <section class="left-column">
+          
+          <!-- Top Row: Runner Feature + Widgets -->
+          <div class="left-top-row">
+            
+            <!-- Runner Article Card -->
+            <article class="runner-card" id="cardRunnerArticle" tabindex="0" role="button" aria-label="Read article on building strength">
+              <div class="runner-card-bg"></div>
+              <div class="runner-card-overlay"></div>
+              <div class="runner-card-content">
+                <h2 class="runner-card-title">How to Build Strength Without Burning Out</h2>
+                <p class="runner-card-desc">Learn why a high-dimension split may sabotage your recovery before you even hit the weights...</p>
+              </div>
+              <div class="runner-card-arrow" aria-hidden="true">↗</div>
+            </article>
+
+            <!-- Stacked Quick Widgets -->
+            <aside class="stacked-widgets">
+              
+              <!-- 30 Min Timer Widget -->
+              <div class="widget-metric-card" id="widgetDuration" tabindex="0" role="button" aria-label="Workout duration 30 minutes">
+                <div class="widget-metric-number" id="timerDisplay">30</div>
+                <div class="widget-metric-label">minutes</div>
+              </div>
+
+              <!-- Hydration Water Bottle Widget -->
+              <div class="widget-hydration-card" id="widgetHydration" tabindex="0" role="button" aria-label="Hydration tracker">
+                <svg class="bottle-svg-icon" viewBox="0 0 24 44" fill="none">
+                  <!-- Shaker Bottle Lid -->
+                  <rect x="7" y="2" width="10" height="4" rx="2" fill="#cef57b" />
+                  <path d="M5 6H19V10H5V6Z" fill="#cef57b" />
+                  <!-- Bottle Body -->
+                  <path d="M6 10H18L17 38C17 40.2 15.2 42 13 42H11C8.8 42 7 40.2 7 38L6 10Z" fill="#cef57b" opacity="0.85" />
+                  <!-- Measurement Lines -->
+                  <line x1="9" y1="18" x2="13" y2="18" stroke="#1c1d20" stroke-width="1.5" stroke-linecap="round"/>
+                  <line x1="9" y1="24" x2="15" y2="24" stroke="#1c1d20" stroke-width="1.5" stroke-linecap="round"/>
+                  <line x1="9" y1="30" x2="12" y2="30" stroke="#1c1d20" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                <span class="widget-hydration-status" id="hydrationStatusText">2.2L / 3L</span>
+              </div>
+
+            </aside>
+          </div>
+
+          <!-- Bottom: Recommended Yellow Card -->
+          <article class="recommended-card" id="recommendedCard">
+            <div>
+              <div class="recommended-header">
+                <span class="recommended-tag">Recommended</span>
+                <button class="recommended-menu-btn" id="btnRecommendedMenu" aria-label="Card options">
+                  <span class="recommended-menu-dot"></span>
+                  <span class="recommended-menu-dot"></span>
+                  <span class="recommended-menu-dot"></span>
+                </button>
+              </div>
+
+              <h2 class="recommended-title" id="recCardTitle">
+                The Community Lift-Off showcased an inspiring lineup of everyday athletes
+              </h2>
+
+              <p class="recommended-excerpt" id="recCardExcerpt">
+                From first-timers to seasoned pros, the Lift-Off proved that form, focus, and friends beat fancy gear. Coaches broke down cues for squats, presses, and pulls and we left with a simple plan you can start tonight.
+              </p>
+            </div>
+
+            <div>
+              <div class="recommended-action-row">
+                <button class="btn-read-more" id="btnReadMoreRecommended">Read more</button>
+                <button class="btn-round-arrow" id="btnArrowRecommended" aria-label="Expand story">↗</button>
+              </div>
+
+              <footer class="recommended-footer">
+                <span class="next-article-title" id="nextArticleTitle">The truth about supplements</span>
+                <span class="next-article-link" id="btnNextArticle">Next →</span>
+              </footer>
+            </div>
+          </article>
+
+        </section>
+
+        <!-- ====================================================================
+             RIGHT COLUMN: HERO ATHLETE & FLOATING MINI PRODUCT
+             ==================================================================== -->
+        <section class="right-column">
+          <div class="hero-athlete-card">
+            <div class="hero-athlete-bg"></div>
+            <div class="hero-athlete-gradient"></div>
+
+            <!-- "Add to cart" Action Top Right -->
+            <button class="btn-add-cart-top" id="btnHeroAddToCart">
+              <span>Add to cart</span>
+              <span class="cart-plus-icon">+</span>
+            </button>
+
+            <!-- Floating Mini Card "Discover new product" -->
+            <aside class="mini-product-card" id="miniProductCard" tabindex="0" role="button" aria-label="Discover new product">
+              <div class="mini-product-image-wrap">
+                <img src="shaker_bottle.png" alt="Black Tumbler Bottle" class="mini-product-img">
+              </div>
+              <h3 class="mini-product-title">Discover<br>new product</h3>
+              <button class="btn-shop-now" id="btnMiniShopNow">Shop now</button>
+            </aside>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ==========================================================================
+       MODALS: ARTICLE VIEWER, PRODUCT QUICKVIEW, & CREATE POST
+       ========================================================================== -->
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal-box" id="modalContentBox">
+      <button class="modal-close-btn" id="modalCloseBtn" aria-label="Close modal">&times;</button>
+      <div id="modalDynamicBody">
+        <!-- Injected via JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Message -->
+  <div class="toast-msg" id="toastMessage">
+    <span id="toastIcon">✓</span>
+    <span id="toastText">Item added to cart!</span>
+  </div>
+
+  <!-- ==========================================================================
+       JAVASCRIPT LOGIC & INTERACTIONS
+       ========================================================================== -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Elements
+      const body = document.body;
+      const btnModeShowcase = document.getElementById('btnModeShowcase');
+      const btnModeFull = document.getElementById('btnModeFull');
+      const cartBadgeCount = document.getElementById('cartBadgeCount');
+      const cartPreviewBtn = document.getElementById('cartPreviewBtn');
+      const toastMessage = document.getElementById('toastMessage');
+      const toastText = document.getElementById('toastText');
+      const modalBackdrop = document.getElementById('modalBackdrop');
+      const modalCloseBtn = document.getElementById('modalCloseBtn');
+      const modalDynamicBody = document.getElementById('modalDynamicBody');
+
+      let cartCount = 0;
+
+      // Toast helper
+      function showToast(msg) {
+        toastText.textContent = msg;
+        toastMessage.classList.add('show');
+        setTimeout(() => toastMessage.classList.remove('show'), 2800);
+      }
+
+      // Open Modal helper
+      function openModal(htmlContent) {
+        modalDynamicBody.innerHTML = htmlContent;
+        modalBackdrop.classList.add('active');
+      }
+
+      function closeModal() {
+        modalBackdrop.classList.remove('active');
+      }
+
+      modalCloseBtn.addEventListener('click', closeModal);
+      modalBackdrop.addEventListener('click', (e) => {
+        if (e.target === modalBackdrop) closeModal();
+      });
+
+      // View Mode Toggle (Showcase vs Fullscreen)
+      btnModeShowcase.addEventListener('click', () => {
+        body.classList.remove('mode-fullscreen');
+        btnModeShowcase.classList.add('active');
+        btnModeFull.classList.remove('active');
+      });
+
+      btnModeFull.addEventListener('click', () => {
+        body.classList.add('mode-fullscreen');
+        btnModeFull.classList.add('active');
+        btnModeShowcase.classList.remove('active');
+      });
+
+      // Navigation Tabs
+      const tabLinks = document.querySelectorAll('.nav-tab-link');
+      tabLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          document.querySelectorAll('.nav-tab-item').forEach(item => {
+            item.classList.remove('active');
+            item.querySelector('a').setAttribute('aria-selected', 'false');
+          });
+          const parentItem = link.parentElement;
+          parentItem.classList.add('active');
+          link.setAttribute('aria-selected', 'true');
+          showToast(`Switched to tab: ${link.textContent.trim()}`);
+        });
+      });
+
+      // Search Box Interactions
+      const searchInput = document.getElementById('workoutSearchInput');
+      const searchDropdown = document.getElementById('searchResultsDropdown');
+
+      searchInput.addEventListener('focus', () => {
+        searchDropdown.classList.add('active');
+      });
+
+      searchInput.addEventListener('blur', () => {
+        setTimeout(() => searchDropdown.classList.remove('active'), 200);
+      });
+
+      document.querySelectorAll('.search-result-item').forEach(item => {
+        item.addEventListener('click', () => {
+          searchInput.value = item.getAttribute('data-query');
+          searchDropdown.classList.remove('active');
+          showToast(`Filter applied: "${searchInput.value}"`);
+        });
+      });
+
+      // Add To Cart Buttons
+      const btnHeroAddToCart = document.getElementById('btnHeroAddToCart');
+      btnHeroAddToCart.addEventListener('click', () => {
+        cartCount++;
+        cartBadgeCount.textContent = cartCount;
+        btnHeroAddToCart.innerHTML = `<span>Added! ✓</span>`;
+        btnHeroAddToCart.style.background = '#ffffff';
+        btnHeroAddToCart.style.color = '#141517';
+        showToast('Pro Training Gear added to cart!');
+        setTimeout(() => {
+          btnHeroAddToCart.innerHTML = `<span>Add to cart</span><span class="cart-plus-icon">+</span>`;
+          btnHeroAddToCart.style.background = '';
+          btnHeroAddToCart.style.color = '';
+        }, 1800);
+      });
+
+      // Cart Preview Modal
+      cartPreviewBtn.addEventListener('click', () => {
+        openModal(`
+          <h2 class="modal-title">Shopping Cart (${cartCount})</h2>
+          <p class="modal-subtitle">Review your active selections before proceeding to checkout.</p>
+          <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 12px; margin-bottom: 20px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-weight:600;">
+              <span>Blvck Thermal Tumbler 750ml</span>
+              <span>$48.00</span>
+            </div>
+            <div style="font-size:12px; color:var(--text-secondary);">Color: Matte Carbon Black · Quantity: ${Math.max(1, cartCount)}</div>
+          </div>
+          <button style="width:100%; background:var(--accent-lime); color:var(--accent-lime-text); border:none; padding:12px; border-radius:9999px; font-weight:700; cursor:pointer;" onclick="alert('Proceeding to checkout!');">Proceed to Checkout →</button>
+        `);
+      });
+
+      // Create Post Modal
+      const btnOpenCreatePost = document.getElementById('btnOpenCreatePost');
+      btnOpenCreatePost.addEventListener('click', () => {
+        openModal(`
+          <h2 class="modal-title">Create New Community Post</h2>
+          <p class="modal-subtitle">Share your workout milestones, recovery routines, or strength breakthroughs.</p>
+          <div style="display:flex; flex-direction:column; gap:14px; margin-bottom:20px;">
+            <input type="text" placeholder="Title your breakthrough..." style="background:#18191c; border:1px solid rgba(255,255,255,0.1); padding:10px 14px; border-radius:10px; color:#fff; font-family:inherit;">
+            <textarea placeholder="Write your post here... Cues, sets, or recovery insights" rows="4" style="background:#18191c; border:1px solid rgba(255,255,255,0.1); padding:10px 14px; border-radius:10px; color:#fff; font-family:inherit; resize:none;"></textarea>
+            <div style="display:flex; gap:10px;">
+              <span style="font-size:11px; padding:4px 10px; background:rgba(255,255,255,0.08); border-radius:999px; cursor:pointer;">#Strength</span>
+              <span style="font-size:11px; padding:4px 10px; background:rgba(255,255,255,0.08); border-radius:999px; cursor:pointer;">#Recovery</span>
+              <span style="font-size:11px; padding:4px 10px; background:rgba(255,255,255,0.08); border-radius:999px; cursor:pointer;">#Supplements</span>
+            </div>
+          </div>
+          <button style="width:100%; background:#feffd5; color:#141517; border:none; padding:12px; border-radius:9999px; font-weight:700; cursor:pointer;" onclick="document.getElementById('modalCloseBtn').click();">Publish Post</button>
+        `);
+      });
+
+      // Runner Article Viewer
+      const cardRunnerArticle = document.getElementById('cardRunnerArticle');
+      cardRunnerArticle.addEventListener('click', () => {
+        openModal(`
+          <h2 class="modal-title">How to Build Strength Without Burning Out</h2>
+          <p class="modal-subtitle">By Performance Lab · 6 min read</p>
+          <div style="color:#d1d3d8; font-size:13px; line-height:1.7; display:flex; flex-direction:column; gap:12px;">
+            <p>High-volume splits often promise rapid gains but quietly accumulate systemic neural fatigue. When your central nervous system (CNS) remains redlined, your muscular recovery halts.</p>
+            <p><strong>3 Core Pillars for Sustainable Progression:</strong></p>
+            <ul style="padding-left:20px; line-height:1.8;">
+              <li><strong>RPE Capping:</strong> Leave 1-2 reps in the tank on multi-joint compound lifts.</li>
+              <li><strong>HRV Monitoring:</strong> Adjust intensity when heart rate variability drops below baseline.</li>
+              <li><strong>Deload Cadence:</strong> Integrate active deload microcycles every 4 to 6 weeks.</li>
+            </ul>
+          </div>
+        `);
+      });
+
+      // Quick Widgets Interactions: Timer & Hydration
+      const widgetDuration = document.getElementById('widgetDuration');
+      let timerMinutes = 30;
+      widgetDuration.addEventListener('click', () => {
+        timerMinutes = (timerMinutes === 30) ? 45 : (timerMinutes === 45) ? 60 : 30;
+        document.getElementById('timerDisplay').textContent = timerMinutes;
+        showToast(`Target workout duration set to ${timerMinutes} mins!`);
+      });
+
+      const widgetHydration = document.getElementById('widgetHydration');
+      let currentHydration = 2.2;
+      widgetHydration.addEventListener('click', () => {
+        currentHydration = +(currentHydration + 0.25).toFixed(2);
+        if (currentHydration > 3.0) currentHydration = 1.5;
+        document.getElementById('hydrationStatusText').textContent = `${currentHydration}L / 3L`;
+        showToast(`Logged +250ml! Today: ${currentHydration}L`);
+      });
+
+      // Recommended Article Carousel
+      const articles = [
+        {
+          title: "The Community Lift-Off showcased an inspiring lineup of everyday athletes",
+          excerpt: "From first-timers to seasoned pros, the Lift-Off proved that form, focus, and friends beat fancy gear. Coaches broke down cues for squats, presses, and pulls and we left with a simple plan you can start tonight.",
+          nextTitle: "The truth about supplements"
+        },
+        {
+          title: "The truth about supplements: Separating hype from proven science",
+          excerpt: "With thousands of powders flooding shelves, only a handful have robust peer-reviewed support. We analyze creatine, beta-alanine, and electrolyte timing for athletes.",
+          nextTitle: "5 signs your CNS is begging for a deload"
+        },
+        {
+          title: "5 signs your CNS is begging for a deload before injury strikes",
+          excerpt: "Persistent grip fatigue, disrupted deep REM sleep, and elevated resting heart rate are clear alarms. Here is how to program an active restorative week.",
+          nextTitle: "The Community Lift-Off showcased..."
+        }
+      ];
+
+      let currentArticleIndex = 0;
+      function updateArticle(index) {
+        currentArticleIndex = index % articles.length;
+        const art = articles[currentArticleIndex];
+        document.getElementById('recCardTitle').textContent = art.title;
+        document.getElementById('recCardExcerpt').textContent = art.excerpt;
+        document.getElementById('nextArticleTitle').textContent = art.nextTitle;
+      }
+
+      document.getElementById('btnNextArticle').addEventListener('click', () => {
+        updateArticle(currentArticleIndex + 1);
+        showToast('Loaded next recommended story');
+      });
+
+      document.getElementById('nextArticleTitle').addEventListener('click', () => {
+        updateArticle(currentArticleIndex + 1);
+      });
+
+      document.getElementById('btnReadMoreRecommended').addEventListener('click', () => {
+        const art = articles[currentArticleIndex];
+        openModal(`
+          <h2 class="modal-title">${art.title}</h2>
+          <p class="modal-subtitle">Editorial Spotlight · Recommended Read</p>
+          <div style="color:#d1d3d8; font-size:13.5px; line-height:1.75;">
+            <p>${art.excerpt}</p>
+            <br>
+            <p>Community athletic showcases emphasize biomechanical integrity and mutual encouragement. Whether stepping on the lifting platform for the first time or setting a master's PR, consistent execution is the bedrock of long-term athleticism.</p>
+          </div>
+        `);
+      });
+
+      document.getElementById('btnArrowRecommended').addEventListener('click', () => {
+        document.getElementById('btnReadMoreRecommended').click();
+      });
+
+      // Mini Product Card & Shop Now
+      const miniProductCard = document.getElementById('miniProductCard');
+      const btnMiniShopNow = document.getElementById('btnMiniShopNow');
+
+      function openProductModal() {
+        openModal(`
+          <div style="display:flex; gap:20px; align-items:center; margin-bottom:18px;">
+            <div style="background:#141517; padding:16px; border-radius:16px; display:flex; align-items:center; justify-content:center;">
+              <img src="shaker_bottle.png" alt="Tumbler" style="max-height:110px;">
+            </div>
+            <div>
+              <span style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--accent-lime);">New Release</span>
+              <h2 class="modal-title" style="margin-top:4px; margin-bottom:6px;">Blvck Thermal Tumbler</h2>
+              <div style="font-size:18px; font-weight:700; color:#fff;">$48.00</div>
+            </div>
+          </div>
+          <p class="modal-subtitle">750ml Double-Walled Vacuum Insulated Shaker with magnetic cap retention and silent mixing grid.</p>
+          <div style="display:flex; gap:10px; margin-top:16px;">
+            <button style="flex:1; background:var(--accent-lime); color:var(--accent-lime-text); border:none; padding:12px; border-radius:9999px; font-weight:700; cursor:pointer;" id="modalAddShakerBtn">Add to Cart</button>
+            <button style="flex:1; background:#31333a; color:#fff; border:none; padding:12px; border-radius:9999px; font-weight:600; cursor:pointer;" onclick="document.getElementById('modalCloseBtn').click();">Cancel</button>
+          </div>
+        `);
+
+        document.getElementById('modalAddShakerBtn').addEventListener('click', () => {
+          cartCount++;
+          cartBadgeCount.textContent = cartCount;
+          closeModal();
+          showToast('Blvck Thermal Tumbler added to cart!');
+        });
+      }
+
+      miniProductCard.addEventListener('click', (e) => {
+        if (e.target !== btnMiniShopNow) openProductModal();
+      });
+      btnMiniShopNow.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openProductModal();
+      });
+
+    });
+  </script>
+</body>
+</html>

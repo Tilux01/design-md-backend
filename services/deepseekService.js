@@ -1,21 +1,98 @@
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
+import dns from 'dns';
 
-const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
+// Force IPv4 DNS lookup to prevent ETIMEDOUT on IPv6 networks
+const originalLookup = dns.lookup;
+dns.lookup = (hostname, options, callback) => {
+  if (typeof options === 'function') {
+    callback = options;
+    options = {};
+  }
+  options = options || {};
+  options.family = 4;
+  return originalLookup(hostname, options, callback);
+};
+
+const NVIDIA_NIM_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
+const DEFAULT_NVIDIA_KEY = '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';
+
+function getApiKey() {
+  return process.env.NVIDIA_API_KEY || DEFAULT_NVIDIA_KEY;
+}
+
+const NVIDIA_MODELS = [
+  'meta/llama-3.2-11b-vision-instruct',
+  'meta/llama-3.1-405b-instruct',
+  'deepseek-ai/deepseek-v4.1-flash',
+  'moonshotai/kimi-k3',
+  'moonshotai/kimi-k2.6'
+];
 
 /**
- * DeepSeek Service: Compresses detailed Gemini Markdown into a lightweight JSON index node.
+ * Helper: Query NVIDIA NIM API with model fallback
  */
-export async function generateLightweightIndex(markdownText, fileId) {
-  const apiKey = process.env.DEEPSEEK_API_KEY;
-  if (!apiKey) {
-    throw new Error('DEEPSEEK_API_KEY is missing');
+async function queryNvidiaNIM(messages, options = {}) {
+  const apiKey = getApiKey();
+  let lastError = null;
+
+  for (const model of NVIDIA_MODELS) {
+    try {
+      console.log(`[NVIDIA NIM Service] Querying model '${model}'...`);
+      const payload = {
+        model,
+        messages,
+        temperature: options.temperature !== undefined ? options.temperature : 0.7,
+        max_tokens: options.max_tokens || 4096,
+        stream: false
+      };
+
+      const response = await axios.post(
+        NVIDIA_NIM_URL,
+        payload,
+        {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          timeout: 60000
+        }
+      );
+
+      const text = response.data.choices[0].message.content;
+      console.log(`[NVIDIA NIM Service] Successfully generated response from '${model}'!`);
+      return text;
+    } catch (err) {
+      lastError = err;
+      console.warn(`[NVIDIA NIM Service] Model '${model}' failed:`, err.response?.data?.detail || err.response?.data || err.message);
+    }
   }
 
+  throw new Error(`All NVIDIA NIM models failed. Last error: ${lastError?.message}`);
+}
+
+/**
+ * Helper: Safely parse JSON from LLM output (stripping ```json blocks if present)
+ */
+function parseJsonOutput(text) {
+  let cleaned = text.trim();
+  if (cleaned.startsWith('```json')) {
+    cleaned = cleaned.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+  } else if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```\s*/, '').replace(/\s*```$/, '');
+  }
+  return JSON.parse(cleaned);
+}
+
+/**
+ * DeepSeek / NVIDIA NIM Service: Compresses detailed Gemini Markdown into a lightweight JSON index node.
+ */
+export async function generateLightweightIndex(markdownText, fileId) {
   const prompt = `Summarize the following UI/UX design specification into a strict, high-density JSON object for ultra-fast RAG retrieval.
 Infer the device target, sector, style, layout pattern, and motion type entirely from the text.
-Output ONLY valid JSON matching this schema:
+Output ONLY valid raw JSON matching this schema (do not wrap in markdown or prose):
 {
   "id": "${fileId}",
   "device": "Inferred target device (e.g. desktop, mobile, tablet)",
@@ -34,25 +111,13 @@ Markdown Specification:
 ${markdownText}`;
 
   try {
-    const response = await axios.post(
-      DEEPSEEK_API_URL,
-      {
-        model: 'deepseek-chat',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' }
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 25000
-      }
-    );
+    const content = await queryNvidiaNIM([
+      { role: 'user', content: prompt }
+    ], { temperature: 0.2, max_tokens: 1024 });
 
-    return JSON.parse(response.data.choices[0].message.content);
+    return parseJsonOutput(content);
   } catch (error) {
-    console.error('DeepSeek compression error, generating fallback node:', error.message);
+    console.error('[NVIDIA NIM Indexing Error] Generating fallback node:', error.message);
     return {
       id: fileId,
       device: 'Auto-detected',
@@ -70,12 +135,9 @@ ${markdownText}`;
 }
 
 /**
- * DeepSeek AI Agent: Dynamically generate creative UI/UX search keywords for the Dribbble Crawler.
+ * DeepSeek / NVIDIA NIM AI Agent: Dynamically generate creative UI/UX search keywords for the Dribbble Crawler.
  */
 export async function generateSearchKeywords() {
-  const apiKey = process.env.DEEPSEEK_API_KEY;
-  if (!apiKey) throw new Error('DEEPSEEK_API_KEY is missing.');
-
   const prompt = `You are a UI/UX Trend Analyst. Your job is to output exactly 10 highly effective search keywords for scraping Dribbble.
 The keywords should be a mix of specific styles (e.g., "bento grid", "3d website", "neumorphism"), specific application types (e.g., "saas dashboard", "fintech app", "landing page"), and modern aesthetics (e.g., "dark mode ui", "minimalist web").
 Do not output anything other than a JSON array of 10 strings.
@@ -84,94 +146,53 @@ Example format:
 ["saas dashboard", "modern landing page", "bento grid ui"]`;
 
   try {
-    const response = await axios.post(
-      'https://api.deepseek.com/chat/completions',
-      {
-        model: 'deepseek-chat',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-        temperature: 0.9 // Higher temperature for varied creative output
-      },
-      { headers: { Authorization: `Bearer ${apiKey}` } }
-    );
+    const content = await queryNvidiaNIM([
+      { role: 'user', content: prompt }
+    ], { temperature: 0.8, max_tokens: 512 });
 
-    const jsonString = response.data.choices[0].message.content;
-    const parsed = JSON.parse(jsonString);
-    
-    // Sometimes models return an object containing the array
+    const parsed = parseJsonOutput(content);
     if (Array.isArray(parsed)) return parsed;
     for (const key in parsed) {
       if (Array.isArray(parsed[key])) return parsed[key];
     }
-    
-    return ["ui design", "web design", "app design"]; // fallback
+
+    return ["saas dashboard", "modern ui", "landing page", "mobile app", "3d website"];
   } catch (error) {
-    console.warn('[DeepSeek Service] Failed to generate keywords, using fallback.', error.message);
+    console.warn('[NVIDIA NIM Keywords Error] Using fallback keywords:', error.message);
     return ["saas dashboard", "modern ui", "landing page", "mobile app", "3d website"];
   }
 }
 
 /**
- * RAG Query: DeepSeek selects the best matching design specification from master index based on user's query prompt.
+ * RAG Query: DeepSeek / NVIDIA NIM selects the best matching design specification from master index based on user's query prompt.
  */
 export async function selectBestMatchingDesign(userPrompt, masterIndex) {
   if (!masterIndex || masterIndex.length === 0) {
     return null;
   }
 
-  // Shuffle the index so that repeated identical queries return diverse results
   const shuffledIndex = [...masterIndex].sort(() => Math.random() - 0.5);
-
-  const apiKey = process.env.DEEPSEEK_API_KEY;
-
-  if (!apiKey) {
-    const lowerPrompt = userPrompt.toLowerCase();
-    const match = shuffledIndex.find(item => 
-      (item.summary && item.summary.toLowerCase().includes(lowerPrompt)) ||
-      (item.style && item.style.toLowerCase().includes(lowerPrompt)) ||
-      (item.sector && item.sector.toLowerCase().includes(lowerPrompt)) ||
-      (item.device && item.device.toLowerCase().includes(lowerPrompt))
-    ) || shuffledIndex[0];
-
-    return {
-      matched_id: match.id,
-      explanation: `Selected a diverse design matching your request based on index metadata.`
-    };
-  }
 
   const prompt = `You are an AI UI/UX Design Assistant. A user is asking for a design recommendation with prompt: "${userPrompt}".
 
 Here is the randomized index of available UI/UX design specifications in the database:
 ${JSON.stringify(shuffledIndex, null, 2)}
 
-Analyze the user request and identify all designs that match. From the matching designs, select ONE design to return. Since the index is shuffled, pick the very first valid match you encounter to ensure the user gets a diverse, random result each time they ask.
-Output ONLY valid JSON matching this schema:
+Analyze the user request and identify all designs that match. From the matching designs, select ONE design to return. Pick the very first valid match you encounter to ensure the user gets a diverse, random result each time they ask.
+Output ONLY valid raw JSON matching this schema:
 {
   "matched_id": "The exact 'id' of the best matching design",
   "explanation": "Brief 1-2 sentence explanation of why this design specification fits the user's request"
 }`;
 
   try {
-    const response = await axios.post(
-      DEEPSEEK_API_URL,
-      {
-        model: 'deepseek-chat',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' }
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 20000
-      }
-    );
+    const content = await queryNvidiaNIM([
+      { role: 'user', content: prompt }
+    ], { temperature: 0.3, max_tokens: 1024 });
 
-    const result = JSON.parse(response.data.choices[0].message.content);
-    return result;
+    return parseJsonOutput(content);
   } catch (error) {
-    console.warn('[DeepSeek RAG Query Error] Using fallback design match:', error.message);
+    console.warn('[NVIDIA NIM RAG Query Error] Using fallback design match:', error.message);
     const match = masterIndex[masterIndex.length - 1];
     return {
       matched_id: match.id,
@@ -179,4 +200,3 @@ Output ONLY valid JSON matching this schema:
     };
   }
 }
-

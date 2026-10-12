@@ -213,11 +213,12 @@ export async function primeBrowserProfileForUiUx() {
  * Advanced Deep Media Scraper: Intercepts network responses and scans DOM for all images and videos,
  * including Pinterest video streams, blob media, and high-res images.
  */
-export async function extractAllMediaFromUrl(url) {
+export async function extractAllMediaFromUrl(url, maxItems = 0) {
   const profileDir = path.resolve('./data/browser-profile');
   if (!fs.existsSync(profileDir)) fs.mkdirSync(profileDir, { recursive: true });
 
-  console.log(`[Media Scraper] Launching persistent UI/UX browser profile for: ${url}`);
+  const limitText = maxItems > 0 ? `${maxItems} items limit` : 'Whole Page (Unlimited)';
+  console.log(`[Media Scraper] Launching persistent UI/UX browser profile for: ${url} [Scope: ${limitText}]`);
   
   const context = await chromium.launchPersistentContext(profileDir, {
     headless: true,
@@ -237,13 +238,56 @@ export async function extractAllMediaFromUrl(url) {
   const page = context.pages().length > 0 ? context.pages()[0] : await context.newPage();
   const interceptedMedia = new Map();
 
-  // Intercept all network responses (catches Pinterest videos, hidden video streams, etc.)
+  // Helper to process & store candidate URLs into interceptedMedia
+  const addCandidateMedia = (rawUrl, type = 'image', mimeType = 'image/jpeg') => {
+    if (!rawUrl || typeof rawUrl !== 'string') return;
+    let cleanUrlStr = rawUrl.trim();
+    if (cleanUrlStr.startsWith('//')) cleanUrlStr = 'https:' + cleanUrlStr;
+    if (!cleanUrlStr.startsWith('http')) return;
+
+    const lower = cleanUrlStr.toLowerCase();
+    if (
+      lower.endsWith('.svg') ||
+      lower.includes('/avatar') ||
+      lower.includes('profile_images') ||
+      lower.includes('user_image') ||
+      lower.includes('/favicon') ||
+      lower.includes('/icon') ||
+      lower.includes('/logo') ||
+      lower.includes('badge') ||
+      lower.includes('button') ||
+      lower.includes('pixel') ||
+      lower.includes('tracking')
+    ) {
+      return;
+    }
+
+    let finalUrl = cleanUrlStr;
+    if (finalUrl.includes('pinimg.com')) {
+      finalUrl = finalUrl.replace(/\/(170x170|200x150|236x|474x|736x)\//, '/originals/');
+    } else if (finalUrl.includes('dribbble.com')) {
+      finalUrl = finalUrl.replace(/_teaser\./, '_4x.').replace(/_1x\./, '_4x.');
+    } else if (finalUrl.includes('behance.net') || finalUrl.includes('mir-s3-cdn-cf.behance.net')) {
+      finalUrl = finalUrl.replace(/\/400_300\//, '/max_1200/').replace(/\/disp\//, '/max_1200/');
+    }
+
+    const cleanKey = finalUrl.split('?')[0];
+    if (!interceptedMedia.has(cleanKey)) {
+      interceptedMedia.set(cleanKey, {
+        id: `media-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        url: finalUrl,
+        type: type,
+        mimeType: type === 'video' ? 'video/mp4' : mimeType
+      });
+    }
+  };
+
+  // Intercept all network responses
   page.on('response', async (response) => {
     try {
       const responseUrl = response.url();
       const contentType = response.headers()['content-type'] || '';
 
-      // Check for video streams & mp4 files (excluding HLS playlist manifests)
       if (
         (contentType.includes('video/mp4') ||
         contentType.includes('video/webm') ||
@@ -254,63 +298,77 @@ export async function extractAllMediaFromUrl(url) {
         !responseUrl.includes('.m3u8') &&
         !responseUrl.includes('/hls/')
       ) {
-        const cleanUrl = responseUrl.split('?')[0];
-        if (!interceptedMedia.has(cleanUrl)) {
-          interceptedMedia.set(cleanUrl, {
-            id: `media-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-            url: responseUrl,
-            type: 'video',
-            mimeType: contentType.includes('webm') ? 'video/webm' : 'video/mp4'
-          });
-        }
+        addCandidateMedia(responseUrl, 'video', contentType.includes('webm') ? 'video/webm' : 'video/mp4');
+      } else if (contentType.includes('image/') || responseUrl.match(/\.(png|jpg|jpeg|webp|gif)(\?.*)?$/i)) {
+        addCandidateMedia(responseUrl, 'image', contentType || 'image/jpeg');
       }
-
-      // Check for high-res images (excluding tiny thumbnails, ads, banners, avatars)
-      if (
-        contentType.includes('image/') &&
-        !responseUrl.includes('.svg') &&
-        !responseUrl.includes('avatar') &&
-        !responseUrl.includes('favicon') &&
-        !responseUrl.includes('icon') &&
-        !responseUrl.includes('logo') &&
-        !responseUrl.includes('profile') &&
-        !responseUrl.includes('/200x150/') &&
-        !responseUrl.includes('/170x170/') &&
-        !responseUrl.includes('/75x75/')
-      ) {
-        let imageUrl = responseUrl;
-
-        // Upgrade Pinterest images to high-res / originals
-        if (imageUrl.includes('pinimg.com')) {
-          imageUrl = imageUrl.replace(/\/(236x|474x|736x)\//, '/originals/');
-        }
-
-        const cleanUrl = imageUrl.split('?')[0];
-        if (!interceptedMedia.has(cleanUrl)) {
-          interceptedMedia.set(cleanUrl, {
-            id: `media-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-            url: imageUrl,
-            type: 'image',
-            mimeType: contentType || 'image/jpeg'
-          });
-        }
-      }
-    } catch (e) {
-      // Ignore response parsing errors
-    }
+    } catch (e) {}
   });
 
   try {
-    console.log(`[Media Scraper] Navigating to target page...`);
+    console.log(`[Media Scraper] Navigating to target page: ${url}`);
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.waitForTimeout(3000);
 
-    // Deep Scroll Loop: Scroll up to 15 times to trigger lazy-loaded images & videos (Pinterest/Behance/Dribbble)
-    console.log(`[Media Scraper] Dynamically scrolling to load all 50+ items...`);
+    console.log(`[Media Scraper] Dynamic deep scroll loop starting...`);
     let previousHeight = 0;
     const maxScrolls = 15;
 
     for (let i = 0; i < maxScrolls; i++) {
+      // 1. Perform DOM media scan at current scroll position
+      try {
+        const domItems = await page.evaluate(() => {
+          const items = [];
+
+          // Collect video sources & elements
+          document.querySelectorAll('video, video source, [data-test-id="pin-video"] video, a[href*=".mp4"]').forEach(v => {
+            const src = v.src || v.currentSrc || v.href;
+            if (src && !src.startsWith('blob:')) items.push({ url: src, type: 'video' });
+          });
+
+          // Collect image elements from cards, pins, containers, articles, grids
+          const selectors = [
+            'div[data-test-id="pin"] img',
+            'div[data-grid-item="true"] img',
+            'a[href*="/pin/"] img',
+            'a.shot-thumbnail-link img',
+            '.shot-media-container img',
+            'picture img',
+            'picture source',
+            'article img',
+            'main img',
+            'figure img',
+            'img'
+          ];
+
+          selectors.forEach(sel => {
+            document.querySelectorAll(sel).forEach(el => {
+              let src = el.src || el.srcset || el.getAttribute('data-src') || el.getAttribute('data-srcset') || el.getAttribute('data-original');
+              if (src) {
+                if (src.includes(',')) {
+                  const parts = src.split(',').map(s => s.trim().split(' ')[0]);
+                  src = parts[parts.length - 1];
+                }
+                items.push({ url: src, type: 'image' });
+              }
+            });
+          });
+
+          return items;
+        });
+
+        domItems.forEach(item => addCandidateMedia(item.url, item.type));
+      } catch (domErr) {}
+
+      console.log(`[Media Scraper] Scroll step ${i + 1}/${maxScrolls}: Collected ${interceptedMedia.size} unique media items so far.`);
+
+      // Check if target limit is satisfied
+      if (maxItems > 0 && interceptedMedia.size >= maxItems) {
+        console.log(`[Media Scraper] Target limit satisfied (${interceptedMedia.size}/${maxItems}). Stopping scroll loop.`);
+        break;
+      }
+
+      // Scroll down
       let currentHeight = 0;
       try {
         currentHeight = await page.evaluate(() => {
@@ -321,100 +379,51 @@ export async function extractAllMediaFromUrl(url) {
 
       await page.waitForTimeout(1000);
 
-      // Natively hover over pins to force Pinterest to trigger the video network requests
+      // Hover over cards to trigger lazy network requests
       try {
-        const pins = await page.$$('div[data-test-id="pin"], div[data-grid-item="true"], a[href*="/pin/"]');
-        // Only hover the most recently loaded ones to save time
-        const pinsToHover = pins.slice(-15);
-        for (const pin of pinsToHover) {
-          await pin.hover({ timeout: 500 }).catch(() => {});
-          await page.waitForTimeout(150); // Small delay to let network request fire
+        const hoverTargets = await page.$$('div[data-test-id="pin"], div[data-grid-item="true"], a[href*="/pin/"], a.shot-thumbnail-link');
+        const pinsToHover = hoverTargets.slice(-12);
+        for (const target of pinsToHover) {
+          await target.hover({ timeout: 500 }).catch(() => {});
+          await page.waitForTimeout(100);
         }
       } catch (hoverErr) {}
 
-      await page.waitForTimeout(500);
-
-      if (currentHeight === previousHeight && i > 7) {
+      if (currentHeight === previousHeight && i > 5) {
         console.log(`[Media Scraper] Reached end of scroll page at step ${i + 1}.`);
         break;
       }
       previousHeight = currentHeight;
     }
 
-    await page.waitForTimeout(2000);
-
-    // Target Pin Cards & High Quality UI Images specifically
-    const domMedia = await page.evaluate(() => {
-      const results = [];
-      
-      // 1. Video elements & sources (including Pinterest video tags)
-      const videoEls = Array.from(document.querySelectorAll('video, video source, [data-test-id="pin-video"] video, a[href*=".mp4"]'));
-      videoEls.forEach(v => {
-        const src = v.src || v.currentSrc || v.href;
-        if (src && !src.startsWith('blob:')) {
-          results.push({ url: src, type: 'video' });
-        }
-      });
-
-      // 2. Select Pinterest Pin card images specifically
-      const pinContainers = Array.from(document.querySelectorAll('div[data-test-id="pin"], div[data-grid-item="true"], a[href*="/pin/"]'));
-      pinContainers.forEach(container => {
-        const img = container.querySelector('img');
-        if (img) {
-          let src = img.src || img.getAttribute('srcset') || img.getAttribute('data-src');
+    // Final DOM scan after scroll settles
+    await page.waitForTimeout(1500);
+    try {
+      const finalDomItems = await page.evaluate(() => {
+        const items = [];
+        document.querySelectorAll('img, picture source, video, video source').forEach(el => {
+          let src = el.src || el.srcset || el.getAttribute('data-src') || el.getAttribute('data-srcset');
           if (src) {
             if (src.includes(',')) {
               const parts = src.split(',').map(s => s.trim().split(' ')[0]);
               src = parts[parts.length - 1];
             }
-            if (src.startsWith('http') && !src.includes('avatar') && !src.includes('logo') && !src.includes('/200x150/')) {
-              results.push({ url: src, type: 'image' });
-            }
+            items.push({ url: src, type: el.tagName.toLowerCase().includes('video') ? 'video' : 'image' });
           }
-        }
+        });
+        return items;
       });
-
-      // 3. Fallback for non-Pinterest sites
-      if (results.length < 5) {
-        const imgEls = Array.from(document.querySelectorAll('img, picture source, [data-src]'));
-        imgEls.forEach(el => {
-          let src = el.src || el.srcset || el.getAttribute('data-src');
-          if (src) {
-            if (src.includes(',')) {
-              const parts = src.split(',').map(s => s.trim().split(' ')[0]);
-              src = parts[parts.length - 1];
-            }
-            if (src.startsWith('http') && !src.includes('avatar') && !src.includes('icon') && !src.includes('logo') && !src.includes('/200x150/')) {
-              results.push({ url: src, type: 'image' });
-            }
-          }
-        });
-      }
-
-      return results;
-    });
-
-    // Merge DOM findings into interceptedMedia map
-    domMedia.forEach(item => {
-      let finalUrl = item.url;
-      if (finalUrl.includes('pinimg.com')) {
-        finalUrl = finalUrl.replace(/\/(236x|474x|736x)\//, '/originals/');
-      }
-      const cleanUrl = finalUrl.split('?')[0];
-      if (!interceptedMedia.has(cleanUrl)) {
-        interceptedMedia.set(cleanUrl, {
-          id: `media-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-          url: finalUrl,
-          type: item.type,
-          mimeType: item.type === 'video' ? 'video/mp4' : 'image/jpeg'
-        });
-      }
-    });
+      finalDomItems.forEach(item => addCandidateMedia(item.url, item.type));
+    } catch (finalErr) {}
 
     await context.close();
 
-    const mediaList = Array.from(interceptedMedia.values());
-    console.log(`[Media Scraper] Extraction complete. Found ${mediaList.length} media items.`);
+    let mediaList = Array.from(interceptedMedia.values());
+    if (maxItems > 0 && mediaList.length > maxItems) {
+      mediaList = mediaList.slice(0, maxItems);
+    }
+
+    console.log(`[Media Scraper] Extraction complete. Returning ${mediaList.length} media items.`);
     return mediaList;
 
   } catch (err) {
