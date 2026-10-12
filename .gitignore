@@ -3,3 +3,5 @@ node_modules/
 temp/
 *.log
 .vercel
+data/browser-profile/
+
