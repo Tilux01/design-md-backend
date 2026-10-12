@@ -46,22 +46,22 @@ if (fs.existsSync(path.resolve('./client'))) {
   app.use(express.static('client'));
 }
 
-// Ensure directories exist on startup (use /tmp on Vercel)
+// Ensure writable directories exist on startup (use /tmp on Vercel)
 const isVercel = Boolean(process.env.VERCEL);
-const baseDir = isVercel ? '/tmp' : '.';
+const writableBaseDir = isVercel ? '/tmp' : '.';
 
-const dataDir = path.resolve(baseDir, 'data');
-const designsDir = path.resolve(baseDir, 'data/designs');
-const tempDir = path.resolve(baseDir, 'temp');
+const writableDataDir = path.resolve(writableBaseDir, 'data');
+const writableDesignsDir = path.resolve(writableBaseDir, 'data/designs');
+const tempDir = path.resolve(writableBaseDir, 'temp');
 
-[dataDir, designsDir, tempDir].forEach(dir => {
+[writableDataDir, writableDesignsDir, tempDir].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 });
 
 // Seed sample master index on Vercel if needed
-const masterIndexPath = path.resolve(dataDir, 'master-index.json');
+const masterIndexPath = path.resolve(writableDataDir, 'master-index.json');
 if (!fs.existsSync(masterIndexPath)) {
   const seedPath = path.resolve('./data/master-index.json');
   if (fs.existsSync(seedPath)) {
@@ -69,6 +69,30 @@ if (!fs.existsSync(masterIndexPath)) {
   } else {
     fs.writeFileSync(masterIndexPath, JSON.stringify([], null, 2));
   }
+}
+
+// Helper to find design file across both root deployment and writable /tmp
+function getDesignFilePath(designId) {
+  if (!designId) return null;
+  const rootPath = path.resolve('./data/designs', `${designId}.md`);
+  if (fs.existsSync(rootPath)) return rootPath;
+  const tmpPath = path.resolve('/tmp/data/designs', `${designId}.md`);
+  if (fs.existsSync(tmpPath)) return tmpPath;
+  const directPath = path.resolve('./data/designs', designId.endsWith('.md') ? designId : `${designId}.md`);
+  if (fs.existsSync(directPath)) return directPath;
+  return null;
+}
+
+// Helper to read master index
+function readMasterIndex() {
+  if (fs.existsSync(masterIndexPath)) {
+    try { return JSON.parse(fs.readFileSync(masterIndexPath, 'utf8')); } catch {}
+  }
+  const rootPath = path.resolve('./data/master-index.json');
+  if (fs.existsSync(rootPath)) {
+    try { return JSON.parse(fs.readFileSync(rootPath, 'utf8')); } catch {}
+  }
+  return [];
 }
 
 // Configure Multer for file uploads
@@ -120,9 +144,9 @@ app.get('/api/index', (req, res) => {
  */
 app.get('/api/designs/:id', (req, res) => {
   const fileId = req.params.id;
-  const filePath = path.join(designsDir, `${fileId}.md`);
+  const filePath = getDesignFilePath(fileId);
 
-  if (!fs.existsSync(filePath)) {
+  if (!filePath || !fs.existsSync(filePath)) {
     return res.status(404).json({ error: `Design specification '${fileId}' not found.` });
   }
 
@@ -162,7 +186,7 @@ app.post('/api/upload-design', upload.array('designFiles', 10), async (req, res)
     console.log('[Extraction Phase] Uploading assets & analyzing with Gemini Multimodal Vision...');
     const designMarkdown = await extractDesignSpec(fileObjects);
     
-    const markdownFilePath = path.join(designsDir, `${fileId}.md`);
+    const markdownFilePath = path.join(writableDesignsDir, `${fileId}.md`);
     fs.writeFileSync(markdownFilePath, designMarkdown);
     console.log(`[Extraction Complete] Saved Markdown spec to: ${markdownFilePath}`);
 
@@ -248,7 +272,7 @@ app.post('/api/process-url', async (req, res) => {
       console.log('[Extraction Phase] Analyzing raw media asset with AI Vision...');
       const designMarkdown = await extractDesignSpec([{ filePath: tempAssetPath, mimeType }]);
 
-      const markdownFilePath = path.join(designsDir, `${fileId}.md`);
+      const markdownFilePath = path.join(writableDesignsDir, `${fileId}.md`);
       fs.writeFileSync(markdownFilePath, designMarkdown);
       console.log(`[Extraction Complete] Saved Markdown spec to: ${markdownFilePath}`);
 
@@ -269,7 +293,7 @@ app.post('/api/process-url', async (req, res) => {
       console.log('[Extraction Phase] Analyzing interaction video with AI Vision...');
       const designMarkdown = await extractDesignSpec([{ filePath: tempAssetPath, mimeType: 'video/webm' }]);
       
-      const markdownFilePath = path.join(designsDir, `${fileId}.md`);
+      const markdownFilePath = path.join(writableDesignsDir, `${fileId}.md`);
       fs.writeFileSync(markdownFilePath, designMarkdown);
       console.log(`[Extraction Complete] Saved Markdown spec to: ${markdownFilePath}`);
 
@@ -389,7 +413,7 @@ app.post('/api/chat', async (req, res) => {
   }
 
   try {
-    const masterIndex = JSON.parse(fs.readFileSync(masterIndexPath, 'utf8'));
+    const masterIndex = readMasterIndex();
 
     if (!masterIndex || masterIndex.length === 0) {
       return res.status(200).json({
@@ -406,9 +430,9 @@ app.post('/api/chat', async (req, res) => {
     }
 
     const designId = matchResult.matched_id;
-    const filePath = path.join(designsDir, `${designId}.md`);
+    const filePath = getDesignFilePath(designId);
 
-    if (!fs.existsSync(filePath)) {
+    if (!filePath || !fs.existsSync(filePath)) {
       return res.status(404).json({ success: false, error: `Design specification file '${designId}.md' not found.` });
     }
 
