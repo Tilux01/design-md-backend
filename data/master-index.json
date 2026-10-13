@@ -4808,5 +4808,44 @@
     "motion_type": "CSS hover transitions (translateY elevation lift with shadow scaling)",
     "summary": "Responsive product showcase landing page for the DBS02 intelligent humanoid robot, featuring a light-gray hero with centered robot imagery, floating spec card, and a bento-grid of technical feature modules mixing white, obsidian, and gradient-blue cards.",
     "file_path": "./data/designs/batch-1791708919196-0.md"
+  },
+  {
+    "id": "design-1791830529051",
+    "device": "desktop",
+    "platform": "web",
+    "sector": "health and wellness",
+    "style": "modern, clean, and minimalist",
+    "layout_pattern": "responsive, grid-based, with prominent use of whitespace",
+    "primary_color": "#1C64FF",
+    "accent_color": "#00D2FF",
+    "motion_type": "smooth, subtle animations",
+    "summary": "A modern and clean landing page design for the fitup platform, featuring a responsive grid-based layout and prominent use of whitespace, with a focus on showcasing the platform's features and benefits.",
+    "file_path": "./data/designs/design-1791830529051.md"
+  },
+  {
+    "id": "design-1791830684185",
+    "device": "mobile",
+    "platform": "web",
+    "sector": "fashion",
+    "style": "modern",
+    "layout_pattern": "card-based",
+    "primary_color": "#F9D342",
+    "accent_color": "#111111",
+    "motion_type": "none",
+    "summary": "AI Fitting Room Interface (RUSH) is a full-screen, card-based UI for fashion fitting and outfit selection.",
+    "file_path": "./data/designs/design-1791830684185.md"
+  },
+  {
+    "id": "design-1791830835490",
+    "device": "mobile",
+    "platform": "web",
+    "sector": "automotive",
+    "style": "modern, clean, geometric sans-serif",
+    "layout_pattern": "full-screen, edge-to-edge, fluid, asymmetrical 12-column macro-grid",
+    "primary_color": "#111111",
+    "accent_color": "#E0A96D",
+    "motion_type": "none",
+    "summary": "Comprehensive UI/UX design specification for Mercedes-Benz C 63 S Coupe web interface, featuring a fully responsive, edge-to-edge full-screen layout with a clean, modern aesthetic.",
+    "file_path": "./data/designs/design-1791830835490.md"
   }
 ]
