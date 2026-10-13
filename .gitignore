@@ -4,5 +4,3 @@ temp/
 *.log
 .vercel
 data/browser-profile/
-
-data/designs/
