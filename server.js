@@ -20,7 +20,7 @@ import multer from 'multer';
 import { generateLightweightIndex, selectBestMatchingDesign } from './services/deepseekService.js';
 import { extractDesignSpec } from './services/geminiService.js';
 import axios from 'axios';
-import { recordWebsiteInteraction, extractAllMediaFromUrl, processMediaBatch, primeBrowserProfileForUiUx } from './services/urlScraperService.js';
+import { recordWebsiteInteraction, extractAllMediaFromUrl, processMediaBatch, primeBrowserProfileForUiUx, downloadMediaAsset } from './services/urlScraperService.js';
 import { startDribbbleCrawler, stopCrawler, getCrawlerStatus } from './services/dribbbleCrawler.js';
 
 dotenv.config();
@@ -28,11 +28,40 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-// Enable CORS for frontend deployments
+// Whitelist of allowed origins for CORS
+const ALLOWED_ORIGIN_PATTERNS = [
+  /^https:\/\/design-md-frontend(-[a-z0-9]+)?(-tiluxs-projects)?\.vercel\.app$/,
+  /^https:\/\/design-md-chat(-[a-z0-9]+)?(-tiluxs-projects)?\.vercel\.app$/,
+  /^http:\/\/localhost:8932$/,
+  /^http:\/\/127\.0\.0\.1:8932$/,
+  /^http:\/\/localhost:3000$/,
+  /^http:\/\/127\.0\.0\.1:3000$/
+];
+
+function isOriginAllowed(origin) {
+  if (!origin) return true; // Allow non-browser requests (e.g. server-to-server, health check, curl)
+  return ALLOWED_ORIGIN_PATTERNS.some(pattern => pattern.test(origin));
+}
+
+// Enable restricted CORS
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  const origin = req.headers.origin;
+
+  if (origin) {
+    if (isOriginAllowed(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    } else {
+      console.warn(`[CORS Blocked] Unauthorized origin: ${origin}`);
+      if (req.method === 'OPTIONS') {
+        return res.status(403).end('CORS origin forbidden');
+      }
+      return res.status(403).json({ success: false, error: 'Forbidden: CORS origin not allowed.' });
+    }
+  }
+
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
@@ -257,17 +286,9 @@ app.post('/api/process-url', async (req, res) => {
       const mimeType = ext === '.mp4' ? 'video/mp4' : (ext === '.webm' ? 'video/webm' : 'image/png');
       tempAssetPath = path.join(tempDir, `${fileId}${ext}`);
 
-      console.log(`[URL Orchestrator] Downloading raw media asset via Axios...`);
-      const response = await axios.get(url, {
-        responseType: 'arraybuffer',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Referer': new URL(url).origin
-        },
-        timeout: 35000
-      });
-
-      fs.writeFileSync(tempAssetPath, Buffer.from(response.data));
+      console.log(`[URL Orchestrator] Downloading raw media asset via downloadMediaAsset...`);
+      const { buffer } = await downloadMediaAsset(url);
+      fs.writeFileSync(tempAssetPath, buffer);
 
       console.log('[Extraction Phase] Analyzing raw media asset with AI Vision...');
       const designMarkdown = await extractDesignSpec([{ filePath: tempAssetPath, mimeType }]);
@@ -376,27 +397,13 @@ app.get('/api/proxy-media', async (req, res) => {
   if (!mediaUrl) return res.status(400).send('Missing url query parameter');
 
   try {
-    const origin = new URL(mediaUrl).origin;
-    const response = await axios.get(mediaUrl, {
-      responseType: 'arraybuffer',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': origin
-      },
-      timeout: 15000
-    });
-
-    const contentType = response.headers['content-type'] || (mediaUrl.includes('.mp4') ? 'video/mp4' : 'image/jpeg');
+    const { buffer, effectiveUrl } = await downloadMediaAsset(mediaUrl, 15000);
+    const contentType = effectiveUrl.includes('.mp4') ? 'video/mp4' : (effectiveUrl.includes('.webm') ? 'video/webm' : 'image/jpeg');
     res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', 'public, max-age=86400');
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.send(Buffer.from(response.data));
+    res.send(buffer);
   } catch (err) {
-    // If Pinterest /originals/ URL returns 403 or fails, fallback to high-res 736x
-    if (mediaUrl.includes('pinimg.com/originals/')) {
-      const fallbackUrl = mediaUrl.replace('/originals/', '/736x/');
-      return res.redirect(`/api/proxy-media?url=${encodeURIComponent(fallbackUrl)}`);
-    }
     res.redirect(mediaUrl);
   }
 });
@@ -407,7 +414,7 @@ app.get('/api/proxy-media', async (req, res) => {
  * retrieves the design specification markdown file, and responds with the complete design.
  */
 app.post('/api/chat', async (req, res) => {
-  const { prompt } = req.body;
+  const { prompt, exclude_ids } = req.body;
   if (!prompt) {
     return res.status(400).json({ success: false, error: 'Prompt is required.' });
   }
@@ -423,7 +430,7 @@ app.post('/api/chat', async (req, res) => {
       });
     }
 
-    const matchResult = await selectBestMatchingDesign(prompt, masterIndex);
+    const matchResult = await selectBestMatchingDesign(prompt, masterIndex, { exclude_ids });
     
     if (!matchResult || !matchResult.matched_id) {
       return res.status(404).json({ success: false, error: 'Could not find a matching design spec.' });

@@ -250,7 +250,7 @@ function getIdfMap(docs) {
 /**
  * RAG Query: DeepSeek / NVIDIA NIM selects the best matching design specification from master index based on user's query prompt.
  */
-export async function selectBestMatchingDesign(userPrompt, masterIndex) {
+export async function selectBestMatchingDesign(userPrompt, masterIndex, options = {}) {
   if (!masterIndex || masterIndex.length === 0) {
     return null;
   }
@@ -258,6 +258,9 @@ export async function selectBestMatchingDesign(userPrompt, masterIndex) {
   const promptLower = (userPrompt || '').toLowerCase();
   const qWords = promptLower.replace(/[^\w\s-]/g, ' ').split(/\s+/).filter(w => w.length > 2);
   const idfMap = getIdfMap(masterIndex);
+
+  const rawExclude = options.exclude_ids || options.excludeIds || [];
+  const excludeSet = new Set(Array.isArray(rawExclude) ? rawExclude : [rawExclude]);
 
   // 1. Synonym & concept expansion
   const expandedConcepts = new Set();
@@ -306,6 +309,11 @@ export async function selectBestMatchingDesign(userPrompt, masterIndex) {
       if (summaryText.includes(concept)) score += 2;
     });
 
+    // Penalize designs already served in this session to encourage discovery
+    if (excludeSet.has(item.id)) {
+      score *= 0.1;
+    }
+
     return score;
   }
 
@@ -317,19 +325,25 @@ export async function selectBestMatchingDesign(userPrompt, masterIndex) {
   // Sort descending by score
   scoredList.sort((a, b) => b.score - a.score);
 
-  // Take top matched candidates (up to 50), or diverse sample if query is general
+  // Take top matched candidates (up to 50)
   const matchedCandidates = scoredList.filter(x => x.score > 0);
   let candidates = [];
 
   if (matchedCandidates.length > 0) {
-    candidates = matchedCandidates.slice(0, 50).map(x => x.item);
+    const rawMatches = matchedCandidates.map(x => x.item);
+    // Shuffle the top tier (top 12 matching candidates) so repeated or similar queries
+    // discover diverse, high-quality alternatives rather than always fixating on index 0
+    const topTierSize = Math.min(rawMatches.length, 12);
+    const topTier = rawMatches.slice(0, topTierSize).sort(() => Math.random() - 0.5);
+    const remaining = rawMatches.slice(topTierSize, 50);
+    candidates = [...topTier, ...remaining];
   } else {
     const shuffled = [...masterIndex].sort(() => Math.random() - 0.5);
     candidates = shuffled.slice(0, 50);
   }
 
-  // Best fallback design in case model fails:
-  const topCandidate = candidates[0];
+  // Diverse fallback design in case model fails:
+  const topCandidate = candidates[Math.floor(Math.random() * Math.min(candidates.length, 3))] || candidates[0];
 
   // Prepare a concise candidate index payload for the LLM
   const candidatePayload = candidates.map(c => ({
@@ -355,6 +369,7 @@ Here is the index of available UI/UX design candidates:
 ${JSON.stringify(candidatePayload, null, 2)}
 
 Analyze the user prompt and select the single BEST matching design from the candidates list.
+Choose a unique, creative, and fitting design that matches the user's intent (favor variety and freshness among relevant candidates).
 Respond with ONLY valid raw JSON:
 {
   "matched_id": "exact 'id' of the best matching candidate",
@@ -364,7 +379,7 @@ Respond with ONLY valid raw JSON:
 
   try {
     const content = await queryNvidiaNIM([systemMessage, userMessage], {
-      temperature: 0.2,
+      temperature: 0.7,
       max_tokens: 512
     });
 

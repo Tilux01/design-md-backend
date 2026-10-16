@@ -276,6 +276,7 @@ export async function extractAllMediaFromUrl(url, maxItems = 0) {
       interceptedMedia.set(cleanKey, {
         id: `media-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
         url: finalUrl,
+        rawUrl: cleanUrlStr,
         type: type,
         mimeType: type === 'video' ? 'video/mp4' : mimeType
       });
@@ -434,6 +435,76 @@ export async function extractAllMediaFromUrl(url, maxItems = 0) {
 }
 
 /**
+ * Robust asset downloader: handles anti-hotlink referers, resolution fallbacks (736x, 564x, 474x), and raw URLs
+ */
+export async function downloadMediaAsset(item, timeoutMs = 35000) {
+  const urlsToTry = [];
+  const primaryUrl = typeof item === 'string' ? item : item.url;
+  const rawUrl = typeof item === 'object' ? item.rawUrl : null;
+
+  if (primaryUrl) urlsToTry.push(primaryUrl);
+  if (rawUrl && !urlsToTry.includes(rawUrl)) urlsToTry.push(rawUrl);
+
+  // If Pinterest URL, add resolution fallbacks in case /originals/ gives 403/404
+  for (const u of [...urlsToTry]) {
+    if (u.includes('pinimg.com')) {
+      const candidates = [
+        u.replace(/\/(originals|170x170|200x150|236x|474x|564x)\//, '/736x/'),
+        u.replace(/\/(originals|170x170|200x150|236x|474x|736x)\//, '/564x/'),
+        u.replace(/\/(originals|170x170|200x150|236x|564x|736x)\//, '/474x/'),
+        u.replace(/\/(originals|170x170|200x150|474x|564x|736x)\//, '/236x/')
+      ];
+      for (const c of candidates) {
+        if (!urlsToTry.includes(c)) urlsToTry.push(c);
+      }
+    } else if (u.includes('dribbble.com')) {
+      const c = u.replace('_4x.', '_1x.');
+      if (!urlsToTry.includes(c)) urlsToTry.push(c);
+    }
+  }
+
+  let lastError = null;
+  for (const targetUrl of urlsToTry) {
+    try {
+      let referer = 'https://www.google.com/';
+      try {
+        const parsed = new URL(targetUrl);
+        if (parsed.hostname.includes('pinimg.com') || parsed.hostname.includes('pinterest.com')) {
+          referer = 'https://www.pinterest.com/';
+        } else if (parsed.hostname.includes('dribbble.com')) {
+          referer = 'https://dribbble.com/';
+        } else if (parsed.hostname.includes('behance.net')) {
+          referer = 'https://www.behance.net/';
+        } else {
+          referer = parsed.origin + '/';
+        }
+      } catch (e) {}
+
+      const response = await axios.get(targetUrl, {
+        responseType: 'arraybuffer',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Referer': referer
+        },
+        timeout: timeoutMs
+      });
+
+      return {
+        buffer: Buffer.from(response.data),
+        effectiveUrl: targetUrl
+      };
+    } catch (err) {
+      lastError = err;
+      // Continue to next fallback url if 403, 404, or network error
+    }
+  }
+
+  throw lastError || new Error(`Failed to download media asset from: ${primaryUrl}`);
+}
+
+/**
  * Batch Process Selected Media: Downloads selected images/videos via Axios (lightweight memory) and generates design specs.
  */
 export async function processMediaBatch(selectedItems) {
@@ -458,18 +529,9 @@ export async function processMediaBatch(selectedItems) {
     const tempPath = path.join(tempDir, `${fileId}${ext}`);
 
     try {
-      // Download asset via lightweight Axios HTTP stream (Zero extra RAM / no extra Chromium instance)
-      const origin = new URL(item.url).origin;
-      const response = await axios.get(item.url, {
-        responseType: 'arraybuffer',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Referer': origin
-        },
-        timeout: 35000
-      });
-
-      fs.writeFileSync(tempPath, Buffer.from(response.data));
+      // Download asset with automatic anti-hotlink headers and resolution fallback
+      const { buffer, effectiveUrl } = await downloadMediaAsset(item);
+      fs.writeFileSync(tempPath, buffer);
 
       // 1. Gemini Multimodal Extraction
       console.log(`[Batch Processor] Sending asset to Gemini Vision...`);
