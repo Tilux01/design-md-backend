@@ -56,9 +56,9 @@ app.use((req, res, next) => {
     } else {
       console.warn(`[CORS Blocked] Unauthorized origin: ${origin}`);
       if (req.method === 'OPTIONS') {
-        return res.status(403).end('CORS origin forbidden');
+        return res.status(403).end();
       }
-      return res.status(403).json({ success: false, error: 'Forbidden: CORS origin not allowed.' });
+      return res.status(403).json({ error: 'Access denied' });
     }
   }
 
