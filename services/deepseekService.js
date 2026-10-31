@@ -25,6 +25,14 @@ const DEFAULT_NVIDIA_KEY = 'nvapi-HJIdIQvt0zwquIaSY_x17dvUM4b2zqxZEPw_Y7VZJMEyao
  */
 const AI_PROVIDERS = [
   {
+    name: 'NanoGPT (gemini-3.1-pro-preview-high)',
+    url: NANOGPT_URL,
+    getKey: () => process.env.NANOGPT_API_KEY || DEFAULT_NANOGPT_KEY,
+    model: 'google/gemini-3.1-pro-preview-high',
+    reasoning_effort: 'high',
+    timeout: 30000
+  },
+  {
     name: 'NanoGPT (gpt-4o-mini)',
     url: NANOGPT_URL,
     getKey: () => process.env.NANOGPT_API_KEY || DEFAULT_NANOGPT_KEY,
@@ -68,6 +76,7 @@ export async function queryAI(messages, options = {}) {
         messages,
         temperature: options.temperature !== undefined ? options.temperature : 0.7,
         max_tokens: options.max_tokens || 4096,
+        ...(provider.reasoning_effort ? { reasoning_effort: provider.reasoning_effort } : {}),
         stream: false
       };
 

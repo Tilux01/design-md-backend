@@ -17,8 +17,10 @@ dns.lookup = (hostname, options, callback) => {
 const NANOGPT_URL = 'https://nano-gpt.com/api/v1/chat/completions';
 const DEFAULT_NANOGPT_KEY = 'sk-nano-4e3902cf-f61a-4966-bffc-173631c62cc1';
 
-// Vision-capable models on NanoGPT (in priority order: Gemini 3.8 Flash primary)
+// Vision-capable models on NanoGPT (in priority order: Gemini 3.1 Pro Preview High primary)
 const VISION_MODELS = [
+  'google/gemini-3.1-pro-preview-high',
+  'google/gemini-3.1-pro-preview',
   'google/gemini-3.8-flash',
   'google/gemini-3.7-flash',
   'google/gemini-3.6-flash',
@@ -68,7 +70,8 @@ export async function extractDesignSpec(filesInput, optionalMimeType) {
       contentParts.push({
         type: 'image_url',
         image_url: {
-          url: `data:${mimeType};base64,${base64Data}`
+          url: `data:${mimeType};base64,${base64Data}`,
+          detail: 'high'
         }
       });
     } else {
@@ -106,7 +109,7 @@ export async function extractDesignSpec(filesInput, optionalMimeType) {
     while (attempts < maxAttempts) {
       attempts++;
       try {
-        console.log(`[NanoGPT Vision] Querying model '${model}' (Attempt ${attempts}/${maxAttempts})...`);
+        console.log(`[NanoGPT Vision] Querying model '${model}' with reasoning_effort=high (Attempt ${attempts}/${maxAttempts})...`);
 
         const response = await axios.post(
           NANOGPT_URL,
@@ -115,6 +118,7 @@ export async function extractDesignSpec(filesInput, optionalMimeType) {
             messages,
             temperature: 0.3,
             max_tokens: 8192,
+            reasoning_effort: 'high',
             stream: false
           },
           {
