@@ -26,10 +26,13 @@ const GEMINI_TEXT_MODELS = [
   'google/gemini-3.8-flash'
 ];
 
+// Vision-capable models for design extraction (Gemini 3.1 Pro Preview High primary)
 const GEMINI_VISION_MODELS = [
-  'gemini-2.5-flash-lite',
+  'google/gemini-3.1-pro-preview-high',
+  'google/gemini-3.1-pro-preview',
   'gemini-3-pro-image-preview',
   'gemini-2.5-pro',
+  'gemini-2.5-flash-lite',
   'google/gemini-3.8-flash'
 ];
 
@@ -59,6 +62,7 @@ export async function queryGemini(messages, options = {}) {
         messages,
         temperature: options.temperature !== undefined ? options.temperature : 0.3,
         max_tokens: options.max_tokens || 4096,
+        ...(options.reasoning_effort ? { reasoning_effort: options.reasoning_effort } : {}),
         stream: false
       };
 
@@ -149,7 +153,8 @@ export async function extractDesignSpec(filesInput, optionalMimeType) {
     }
   ], {
     models: GEMINI_VISION_MODELS,
-    timeout: 30000,
+    reasoning_effort: 'high',
+    timeout: 120000,
     max_tokens: 8192
   });
 }
