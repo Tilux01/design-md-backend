@@ -139,7 +139,33 @@ export async function extractDesignSpec(filesInput, optionalMimeType) {
     }
   }
 
-  const designPrompt = `please i want you to write exact design.md for this media. i want it to be exact perfect clone, but if make sure you ommit frames or backgrounds of the design itself if there, i want full screen. exactly, everything matching, please talk about the fonts being used and fallback if unable too reach. please i want it detailed and everything needed or in the media is discussed. also if there are images, describe the images instead of guiding on how to draw the image using code and also specify if the image is backgroundless and describe the image well and proper placement and rotation. please don't miss any detail`;
+  const designPrompt = `You are a Principal UI/UX Design System Architect & Reverse-Engineer using Google Gemini 3.1 Pro.
+Analyze the provided visual media and generate an exhaustive, pixel-level \`design.md\` specification for a frontend engineer to recreate this application.
+
+CRITICAL ARCHITECTURAL CONSTRAINTS (MANDATORY & NON-NEGOTIABLE):
+1. ZERO DEVICE FRAMES / ZERO MOCKUPS / ZERO BROWSER CHROME:
+   - If the screenshot, video, or graphic displays the design inside a device mockup (such as a MacBook/laptop bezel, iPhone/Android frame, iPad/tablet bezel, browser window titlebar/controls, or a floating card container with outer shadows), YOU MUST COMPLETELY STRIP AND OMIT THE FRAME.
+   - Do NOT specify any outer device frame, browser frame, or mockup wrapper.
+
+2. ZERO PRESENTATION CANVAS BACKGROUND / OMIT TEMPLATE BACKDROP:
+   - Dribbble, Behance, and Pinterest design shots frequently place the UI on top of an outer presentation background (such as an outer gray, beige, pastel, textured, or gradient backdrop canvas).
+   - YOU MUST COMPLETELY IGNORE AND OMIT THIS OUTER PRESENTATION BACKGROUND!
+   - The application background is ONLY the actual background color, canvas, or surface INSIDE the website/app itself. Never set the body or page background to the outer presentation canvas.
+
+3. MANDATORY EDGE-TO-EDGE FULL-SCREEN VIEWPORT:
+   - The application layout MUST be full-screen: 100% width, 100% height (100vw, 100vh) edge-to-edge.
+   - Global root container must have: width: 100vw; min-height: 100vh; margin: 0; padding: 0; border: none; border-radius: 0.
+   - Headers, navigation bars, and sidebars must attach directly to the screen edges (top: 0, left: 0, right: 0).
+   - Do NOT wrap the entire website in a centered card container with max-width, outer padding/margins, rounded corners, or outer drop shadows.
+
+4. EXACT DESIGN SPECIFICATION REQUIREMENTS:
+   - Layout & Structure: Comprehensive breakdown of all regions, sidebars, navigation bars, headers, hero banners, content grids, cards, tables, and footers with exact CSS flexbox/grid layout and pixel/percentage dimensions.
+   - Color Palette & Design Tokens: Exact HEX codes for primary backgrounds, surfaces, text, active states, tags, borders, and gradients.
+   - Typography System: Primary font family, fallback font sequence, font sizes (px/rem), font weights (400, 500, 600, 700), line-heights, letter-spacing, and text transforms.
+   - Imagery & Assets: Exhaustive, high-fidelity visual descriptions of all photographs, illustrations, and background images (do not give SVG path code; describe the subjects, atmosphere, lighting, angles, whether backgroundless/transparent PNG, and exact placement/rotation).
+   - Interactive States & Micro-interactions: Hover states, active tabs, pill buttons, transitions, badges, and animations.
+
+Generate ONLY the comprehensive, production-ready markdown specification.`;
 
   contentParts.push({
     type: 'text',
@@ -163,25 +189,34 @@ export async function extractDesignSpec(filesInput, optionalMimeType) {
  * Gemini Design Generator & Refiner:
  * Takes the user request and an optional reference template.
  * Generates the full design.md matching the user's domain, brand, purpose, copy, and imagery,
- * while strictly preserving the template's layout, theme, and styling.
+ * while strictly preserving the template's layout, theme, and styling, and enforcing full-screen edge-to-edge architecture.
  */
 export async function generateDesignWithGemini(userPrompt, referenceMarkdown = null) {
   const systemPrompt = `You are an expert UI/UX Design System Architect powered by Google Gemini.
 Your task is to produce a complete, production-ready \`design.md\` specification for the user request.
 
 RULES:
-1. When reference design template is provided:
+1. FULL-SCREEN EDGE-TO-EDGE ENFORCEMENT (CRITICAL):
+   - The UI MUST be full-screen: 100% width and 100% height (100vw, 100vh), edge-to-edge.
+   - NEVER include device frames (MacBook, iPhone, tablet, browser chrome).
+   - NEVER include outer presentation backgrounds or template backdrops (e.g. gray/pastel showcase canvas).
+   - Root container must have: width: 100vw; min-height: 100vh; margin: 0; padding: 0; border-radius: 0; border: none. Headers, sidebars, and banners must attach directly to viewport edges.
+
+2. When reference design template is provided:
    - REFINE ONLY:
      * Brand name, taglines, greetings, body copy, features, services, pricing plans, testimonials, KPI numbers/labels, and button CTAs to match user request.
      * Imagery descriptions: Rewrite all image descriptions so they portray scenes, subjects, and environments tailored to the user's specific domain (e.g. farms, harvest boxes, fresh produce for farming; vehicles for automotive; properties for real estate).
+     * If the reference template contains an outer presentation frame, wrapper card, or presentation background, STRIP IT OUT and make the adapted layout edge-to-edge full-screen.
    - PRESERVE 100% UNCHANGED (CRITICAL):
      * Visual theme and colors: ALL HEX codes, color palettes, and gradients must remain untouched.
-     * Layout & Structure: Viewport, grid systems, card wrappers, regions, coordinates, dimensions, padding, margins, column counts.
+     * Layout & Structure: Grid systems, cards, regions, coordinates, column counts, and internal padding.
      * Typography Styling: Font families, font sizes (px/rem), font weights (400, 600, 700), line heights.
-     * Visual Effects: Border radiuses, shadows, glassmorphism, blur, borders, transitions, animations.
-2. When no reference is provided:
-   - Generate a comprehensive, beautiful design.md including Global Layout, Typography System, Component Breakdown, Color Palette (with HEX codes), and Imagery Notes.
-3. OUTPUT:
+     * Visual Effects: Border radiuses on inner cards/buttons, shadows, glassmorphism, blur, borders, transitions.
+
+3. When no reference is provided:
+   - Generate a comprehensive, beautiful design.md for an edge-to-edge full-screen application.
+
+4. OUTPUT:
    - Output ONLY the complete markdown document. Do not wrap in conversational chatter.`;
 
   const userContent = referenceMarkdown
