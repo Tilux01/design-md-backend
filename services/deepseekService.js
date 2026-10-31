@@ -171,80 +171,17 @@ function parseJsonOutput(text) {
 }
 
 /**
- * Compresses detailed Gemini Markdown into a lightweight JSON index node.
+ * Compresses detailed Markdown into a lightweight JSON index node via Gemini.
  */
 export async function generateLightweightIndex(markdownText, fileId) {
-  const prompt = `Summarize the following UI/UX design specification into a strict, high-density JSON object for ultra-fast RAG retrieval.
-Infer the device target, sector, style, layout pattern, and motion type entirely from the text.
-Output ONLY valid raw JSON matching this schema (do not wrap in markdown or prose):
-{
-  "id": "${fileId}",
-  "device": "Inferred target device (e.g. desktop, mobile, tablet)",
-  "platform": "Inferred source platform or architecture style",
-  "sector": "Inferred industry sector",
-  "style": "The overall visual style and theme",
-  "layout_pattern": "The predominant layout structure",
-  "primary_color": "HEX code",
-  "accent_color": "HEX code",
-  "motion_type": "The animation mechanics or engine used",
-  "summary": "Brief 1-2 sentence overview of the design blueprint",
-  "file_path": "./data/designs/${fileId}.md"
-}
-
-Markdown Specification:
-${markdownText}`;
-
-  try {
-    const content = await queryAI([
-      { role: 'user', content: prompt }
-    ], { temperature: 0.2, max_tokens: 1024 });
-
-    return parseJsonOutput(content);
-  } catch (error) {
-    console.error('[Indexing Error] Generating fallback node:', error.message);
-    return {
-      id: fileId,
-      device: 'Auto-detected',
-      platform: 'Auto-detected',
-      sector: 'Auto-detected',
-      style: 'Modern UI/UX',
-      layout_pattern: 'Responsive Layout Grid',
-      primary_color: '#0F172A',
-      accent_color: '#3B82F6',
-      motion_type: 'Static / Fluid',
-      summary: 'Automated UI/UX design spec extracted via AI Design Vision.',
-      file_path: `./data/designs/${fileId}.md`
-    };
-  }
+  return generateLightweightIndexWithGemini(markdownText, fileId);
 }
 
 /**
- * Dynamically generate creative UI/UX search keywords for the Dribbble Crawler.
+ * Dynamically generate creative UI/UX search keywords via Gemini.
  */
 export async function generateSearchKeywords() {
-  const prompt = `You are a UI/UX Trend Analyst. Your job is to output exactly 10 highly effective search keywords for scraping Dribbble.
-The keywords should be a mix of specific styles (e.g., "bento grid", "3d website", "neumorphism"), specific application types (e.g., "saas dashboard", "fintech app", "landing page"), and modern aesthetics (e.g., "dark mode ui", "minimalist web").
-Do not output anything other than a JSON array of 10 strings.
-
-Example format:
-["saas dashboard", "modern landing page", "bento grid ui"]`;
-
-  try {
-    const content = await queryAI([
-      { role: 'user', content: prompt }
-    ], { temperature: 0.8, max_tokens: 512 });
-
-    const parsed = parseJsonOutput(content);
-    if (Array.isArray(parsed)) return parsed;
-    for (const key in parsed) {
-      if (Array.isArray(parsed[key])) return parsed[key];
-    }
-
-    return ["saas dashboard", "modern ui", "landing page", "mobile app", "3d website"];
-  } catch (error) {
-    console.warn('[Keywords Error] Using fallback keywords:', error.message);
-    return ["saas dashboard", "modern ui", "landing page", "mobile app", "3d website"];
-  }
+  return generateSearchKeywordsWithGemini();
 }
 
 // Comprehensive UI/UX Domain Concept Clusters for Semantic Synonym & Sector Expansion
@@ -413,68 +350,15 @@ export async function selectBestMatchingDesign(userPrompt, masterIndex, options 
     candidates = (deviceFiltered.length > 0 ? deviceFiltered : masterIndex).slice(0, 25);
   }
 
-  // Top candidate as reliable baseline (strict ranking, no random displacement)
-  const topCandidate = candidates[0];
+  const topCandidate = candidates[0] || masterIndex[0];
 
-  // Prepare a concise candidate index payload for the LLM
-  const candidatePayload = candidates.slice(0, 12).map(c => ({
-    id: c.id,
-    device: c.device,
-    platform: c.platform,
-    sector: c.sector,
-    style: c.style,
-    layout_pattern: c.layout_pattern,
-    summary: c.summary
-  }));
-
-  const systemMessage = {
-    role: 'system',
-    content: 'You are an expert UI/UX design retrieval assistant. You MUST respond with ONLY a single valid raw JSON object matching the requested schema. Never output any introductory text, conversational preamble, commentary, or markdown greetings.'
+  return {
+    matched_id: topCandidate.id,
+    explanation: `Selected '${topCandidate.style || 'Modern UI'}' (${topCandidate.sector || 'General'}) layout archetype matching '${userPrompt}'.`
   };
-
-  const userMessage = {
-    role: 'user',
-    content: `A user is requesting a UI/UX design specification with the prompt: "${userPrompt}".
-
-Here is the index of available UI/UX design candidates:
-${JSON.stringify(candidatePayload, null, 2)}
-
-Analyze the user prompt and select the single BEST matching design from the candidates list.
-Choose the design whose structure, device target, layout, and visual archetype best match the user's requirements.
-Respond with ONLY valid raw JSON:
-{
-  "matched_id": "exact 'id' of the best matching candidate",
-  "explanation": "Brief 1-2 sentence explanation of why this design matches the user prompt"
-}`
-  };
-
-  try {
-    const content = await queryAI([systemMessage, userMessage], {
-      temperature: 0.3,
-      max_tokens: 512
-    });
-
-    const parsed = parseJsonOutput(content);
-    if (parsed && parsed.matched_id) {
-      const exists = masterIndex.some(m => m.id === parsed.matched_id);
-      if (exists) {
-        return parsed;
-      }
-    }
-
-    return {
-      matched_id: topCandidate.id,
-      explanation: parsed?.explanation || `Selected best matching design (${topCandidate.style || topCandidate.sector}) for your prompt.`
-    };
-  } catch (error) {
-    console.warn('[RAG Query Error] Using best scored candidate fallback:', error.message);
-    return {
-      matched_id: topCandidate.id,
-      explanation: `Selected '${topCandidate.style || 'Modern UI'}' (${topCandidate.sector || 'General'}) from the design database matching '${userPrompt}'.`
-    };
-  }
 }
 
+import { generateDesignWithGemini, generateLightweightIndexWithGemini, generateSearchKeywordsWithGemini } from './geminiService.js';
 /**
  * Refines ONLY the contents (branding, headings, taglines, copy, KPIs, testimonials, CTAs)
  * and image descriptions of a matched design.md specification to match the user's specific request.
@@ -484,52 +368,5 @@ Respond with ONLY valid raw JSON:
  * styling (border radius, shadows, glassmorphism, animations) MUST REMAIN 100% UNCHANGED.
  */
 export async function refineDesignSpec(markdownContent, userPrompt) {
-  if (!markdownContent || typeof markdownContent !== 'string') {
-    return markdownContent;
-  }
-  if (!userPrompt || typeof userPrompt !== 'string' || userPrompt.trim().length === 0) {
-    return markdownContent;
-  }
-
-  const systemPrompt = `You are an expert UI/UX Design System Refiner.
-Your job is to adapt the provided UI/UX design markdown specification to match the user request (brand name, domain/sector, purpose, features, products/services).
-
-CRITICAL CONSTRAINTS (YOU MUST OBEY AT ALL COSTS):
-1. REFINE ONLY:
-   - Text contents: Headings, taglines, brand names, greetings, body copy, paragraph descriptions, KPI labels/metrics, list items, button labels, testimonials, pricing plans, and data labels.
-   - Imagery descriptions: Image prompts and descriptions must depict subjects, environments, and assets tailored to the user request.
-2. PRESERVE 100% UNCHANGED:
-   - Visual Theme & Design: ALL color codes (HEX codes, rgb, rgba), color palettes, tables, gradients, and dark/light modes MUST NOT BE CHANGED.
-   - Layout & Structure: The viewport, grid, layout pattern, section hierarchy, component order, coordinates, dimensions, padding, margins, card structures, and flex/grid divisions MUST NOT BE CHANGED.
-   - Typography Styling: Font families, font sizes (px, rem), font weights (400, 600, 700), line-heights MUST NOT BE CHANGED.
-   - Visual Effects & Styling: Border radiuses (px), box-shadows, glassmorphism, blur, borders, transitions, and animations MUST NOT BE CHANGED.
-3. OUTPUT FORMAT:
-   - Return the complete, fully refined markdown specification.
-   - Do NOT wrap in conversational intro or outro. Output only the markdown document.`;
-
-  const userMessage = `User Request: ${userPrompt.trim()}
-
-Original Design Specification:
-${markdownContent}`;
-
-  try {
-    console.log(`[Design Refinement Engine] Adapting content & imagery for prompt: "${userPrompt.substring(0, 60)}..."`);
-    const refined = await queryAI([
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userMessage }
-    ], {
-      temperature: 0.3,
-      max_tokens: 4096
-    });
-
-    if (refined && typeof refined === 'string' && refined.trim().length > 100) {
-      console.log(`[Design Refinement Engine] Successfully refined design specification!`);
-      return refined.trim();
-    }
-
-    return markdownContent;
-  } catch (error) {
-    console.warn(`[Design Refinement Engine] Refinement error, returning base spec:`, error.message);
-    return markdownContent;
-  }
+  return generateDesignWithGemini(userPrompt, markdownContent);
 }

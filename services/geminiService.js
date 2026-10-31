@@ -17,14 +17,20 @@ dns.lookup = (hostname, options, callback) => {
 const NANOGPT_URL = 'https://nano-gpt.com/api/v1/chat/completions';
 const DEFAULT_NANOGPT_KEY = 'sk-nano-4e3902cf-f61a-4966-bffc-173631c62cc1';
 
-// Vision-capable models on NanoGPT (in priority order: Gemini 3.1 Pro Preview High primary)
-const VISION_MODELS = [
-  'google/gemini-3.1-pro-preview-high',
-  'google/gemini-3.1-pro-preview',
-  'google/gemini-3.8-flash',
-  'google/gemini-3.7-flash',
-  'google/gemini-3.6-flash',
-  'gemini-2.5-flash'
+// Fast, reliable Gemini models in priority order
+const GEMINI_TEXT_MODELS = [
+  'gemini-2.5-flash-lite',
+  'google/gemini-flash-lite-latest',
+  'gemini-2.5-pro',
+  'gemini-3-pro-image-preview',
+  'google/gemini-3.8-flash'
+];
+
+const GEMINI_VISION_MODELS = [
+  'gemini-2.5-flash-lite',
+  'gemini-3-pro-image-preview',
+  'gemini-2.5-pro',
+  'google/gemini-3.8-flash'
 ];
 
 function getApiKey() {
@@ -36,12 +42,59 @@ function sleep(ms) {
 }
 
 /**
- * NanoGPT Vision Service: Uses vision models to extract design specs into Markdown.
+ * Universal Gemini query helper with multi-model fallback and strict timeouts
+ */
+export async function queryGemini(messages, options = {}) {
+  const apiKey = getApiKey();
+  const models = options.models || GEMINI_TEXT_MODELS;
+  let lastError = null;
+
+  for (const model of models) {
+    try {
+      console.log(`[Gemini Engine] Querying model: '${model}'...`);
+      const t0 = Date.now();
+
+      const payload = {
+        model,
+        messages,
+        temperature: options.temperature !== undefined ? options.temperature : 0.3,
+        max_tokens: options.max_tokens || 4096,
+        stream: false
+      };
+
+      const response = await axios.post(
+        NANOGPT_URL,
+        payload,
+        {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          timeout: options.timeout || 15000
+        }
+      );
+
+      const text = response.data?.choices?.[0]?.message?.content;
+      if (text && text.trim().length > 0) {
+        console.log(`[Gemini Engine] Model '${model}' responded successfully in ${Date.now() - t0}ms!`);
+        return text.trim();
+      }
+    } catch (err) {
+      lastError = err;
+      const status = err.response?.status;
+      const msg = err.response?.data?.message || err.message;
+      console.warn(`[Gemini Engine] Model '${model}' failed (${status || 'timeout'}):`, msg);
+    }
+  }
+
+  throw new Error(`All Gemini models failed. Last error: ${lastError?.message}`);
+}
+
+/**
+ * Gemini Vision Service: Extracts UI/UX design specs into production-ready Markdown.
  */
 export async function extractDesignSpec(filesInput, optionalMimeType) {
-  const apiKey = getApiKey();
-
-  // Normalize files input to always be an array of [{ filePath, mimeType }]
   let files = [];
   if (typeof filesInput === 'string') {
     const ext = filesInput.toLowerCase();
@@ -57,14 +110,13 @@ export async function extractDesignSpec(filesInput, optionalMimeType) {
     files = [filesInput];
   }
 
-  // Build the image_url content parts (NanoGPT uses OpenAI vision format)
   const contentParts = [];
 
   for (const fileObj of files) {
     const { filePath, mimeType } = fileObj;
 
     if (mimeType.startsWith('image/')) {
-      console.log(`[NanoGPT Vision] Encoding image inline (${mimeType}): ${filePath}`);
+      console.log(`[Gemini Vision] Encoding image inline (${mimeType}): ${filePath}`);
       const fileBuffer = fs.readFileSync(filePath);
       const base64Data = fileBuffer.toString('base64');
       contentParts.push({
@@ -75,12 +127,10 @@ export async function extractDesignSpec(filesInput, optionalMimeType) {
         }
       });
     } else {
-      // For video files — NanoGPT doesn't have a File Upload API.
-      // Log a warning; video support may be limited on this endpoint.
-      console.warn(`[NanoGPT Vision] Video files (${mimeType}) are not directly supported via NanoGPT vision API. Only the file path will be mentioned in the prompt.`);
+      console.warn(`[Gemini Vision] Video media (${mimeType}): analyzing with Gemini context.`);
       contentParts.push({
         type: 'text',
-        text: `[Video file provided: ${filePath} (${mimeType}) — please analyze based on the context provided]`
+        text: `[Video file provided: ${filePath} (${mimeType}) — analyze visual UI/UX layout and states]`
       });
     }
   }
@@ -92,67 +142,135 @@ export async function extractDesignSpec(filesInput, optionalMimeType) {
     text: designPrompt
   });
 
-  const messages = [
+  return queryGemini([
     {
       role: 'user',
       content: contentParts
     }
-  ];
+  ], {
+    models: GEMINI_VISION_MODELS,
+    timeout: 30000,
+    max_tokens: 8192
+  });
+}
 
-  let lastError = null;
-  let markdownText = null;
+/**
+ * Gemini Design Generator & Refiner:
+ * Takes the user request and an optional reference template.
+ * Generates the full design.md matching the user's domain, brand, purpose, copy, and imagery,
+ * while strictly preserving the template's layout, theme, and styling.
+ */
+export async function generateDesignWithGemini(userPrompt, referenceMarkdown = null) {
+  const systemPrompt = `You are an expert UI/UX Design System Architect powered by Google Gemini.
+Your task is to produce a complete, production-ready \`design.md\` specification for the user request.
 
-  for (const model of VISION_MODELS) {
-    let attempts = 0;
-    const maxAttempts = 2;
+RULES:
+1. When reference design template is provided:
+   - REFINE ONLY:
+     * Brand name, taglines, greetings, body copy, features, services, pricing plans, testimonials, KPI numbers/labels, and button CTAs to match user request.
+     * Imagery descriptions: Rewrite all image descriptions so they portray scenes, subjects, and environments tailored to the user's specific domain (e.g. farms, harvest boxes, fresh produce for farming; vehicles for automotive; properties for real estate).
+   - PRESERVE 100% UNCHANGED (CRITICAL):
+     * Visual theme and colors: ALL HEX codes, color palettes, and gradients must remain untouched.
+     * Layout & Structure: Viewport, grid systems, card wrappers, regions, coordinates, dimensions, padding, margins, column counts.
+     * Typography Styling: Font families, font sizes (px/rem), font weights (400, 600, 700), line heights.
+     * Visual Effects: Border radiuses, shadows, glassmorphism, blur, borders, transitions, animations.
+2. When no reference is provided:
+   - Generate a comprehensive, beautiful design.md including Global Layout, Typography System, Component Breakdown, Color Palette (with HEX codes), and Imagery Notes.
+3. OUTPUT:
+   - Output ONLY the complete markdown document. Do not wrap in conversational chatter.`;
 
-    while (attempts < maxAttempts) {
-      attempts++;
-      try {
-        console.log(`[NanoGPT Vision] Querying model '${model}' with reasoning_effort=high (Attempt ${attempts}/${maxAttempts})...`);
+  const userContent = referenceMarkdown
+    ? `User Request: ${userPrompt}\n\nReference Design Template:\n${referenceMarkdown}`
+    : `User Request: ${userPrompt}`;
 
-        const response = await axios.post(
-          NANOGPT_URL,
-          {
-            model,
-            messages,
-            temperature: 0.3,
-            max_tokens: 8192,
-            reasoning_effort: 'high',
-            stream: false
-          },
-          {
-            headers: {
-              'Authorization': `Bearer ${apiKey}`,
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            },
-            timeout: 120000
-          }
-        );
+  try {
+    const result = await queryGemini([
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userContent }
+    ], {
+      temperature: 0.3,
+      max_tokens: 4096,
+      timeout: 18000
+    });
 
-        markdownText = response.data.choices[0].message.content;
-        console.log(`[NanoGPT Vision] Successfully generated design spec with model '${model}'!`);
-        break;
-      } catch (err) {
-        lastError = err;
-        const errMsg = err.response?.data?.error?.message || err.response?.data?.detail || err.message;
-        console.warn(`[NanoGPT Vision] Model '${model}' attempt ${attempts} failed: ${errMsg}`);
-        if (err.response?.status === 429 || errMsg?.includes('rate limit')) {
-          console.log('[NanoGPT Vision] Rate limit hit. Waiting 3s before retry...');
-          await sleep(3000);
-        } else {
-          break; // Move to next model on non-rate-limit errors
-        }
-      }
+    if (result && result.length > 100) {
+      return result;
     }
-
-    if (markdownText) break;
+    return referenceMarkdown || `# Design Specification: ${userPrompt}`;
+  } catch (error) {
+    console.warn(`[Gemini Engine] Design generation fallback:`, error.message);
+    return referenceMarkdown || `# Design Specification: ${userPrompt}`;
   }
+}
 
-  if (!markdownText) {
-    throw new Error(`All NanoGPT vision models failed. Last error: ${lastError?.message}`);
-  }
+/**
+ * Gemini Indexer: Compresses detailed Markdown into a lightweight JSON index node.
+ */
+export async function generateLightweightIndexWithGemini(markdownText, fileId) {
+  const prompt = `Summarize the following UI/UX design specification into a strict, high-density JSON object for ultra-fast RAG retrieval.
+Infer the device target, sector, style, layout pattern, and motion type entirely from the text.
+Output ONLY valid raw JSON matching this schema (do not wrap in markdown or prose):
+{
+  "id": "${fileId}",
+  "device": "Inferred target device (e.g. desktop, mobile, tablet)",
+  "platform": "Inferred source platform or architecture style",
+  "sector": "Inferred industry sector",
+  "style": "The overall visual style and theme",
+  "layout_pattern": "The predominant layout structure",
+  "primary_color": "HEX code",
+  "accent_color": "HEX code",
+  "motion_type": "The animation mechanics or engine used",
+  "summary": "Brief 1-2 sentence overview of the design blueprint",
+  "file_path": "./data/designs/${fileId}.md"
+}
 
-  return markdownText;
+Markdown Specification:
+${markdownText}`;
+
+  try {
+    const content = await queryGemini([
+      { role: 'user', content: prompt }
+    ], { temperature: 0.2, max_tokens: 1024, timeout: 10000 });
+
+    const firstBrace = content.indexOf('{');
+    const lastBrace = content.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      return JSON.parse(content.substring(firstBrace, lastBrace + 1));
+    }
+  } catch (_) {}
+
+  return {
+    id: fileId,
+    device: 'desktop',
+    platform: 'web',
+    sector: 'general',
+    style: 'Modern UI/UX',
+    layout_pattern: 'Responsive Layout Grid',
+    primary_color: '#0F172A',
+    accent_color: '#3B82F6',
+    motion_type: 'Fluid',
+    summary: 'Automated UI/UX design spec extracted via Gemini Vision.',
+    file_path: `./data/designs/${fileId}.md`
+  };
+}
+
+/**
+ * Gemini Trend Analyst: Generates search keywords for the crawler.
+ */
+export async function generateSearchKeywordsWithGemini() {
+  const prompt = `Output a JSON array of 10 modern UI/UX keywords for Dribbble search (e.g. ["saas dashboard", "bento grid", "mobile app", "fintech"]). Output only JSON array.`;
+  try {
+    const content = await queryGemini([
+      { role: 'user', content: prompt }
+    ], { temperature: 0.7, max_tokens: 512, timeout: 8000 });
+
+    const firstBracket = content.indexOf('[');
+    const lastBracket = content.lastIndexOf(']');
+    if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+      const parsed = JSON.parse(content.substring(firstBracket, lastBracket + 1));
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (_) {}
+
+  return ["saas dashboard", "modern landing page", "bento grid ui", "mobile app", "ecommerce shop"];
 }
