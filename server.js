@@ -17,7 +17,7 @@ import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
 import multer from 'multer';
-import { generateLightweightIndex, selectBestMatchingDesign } from './services/deepseekService.js';
+import { generateLightweightIndex, selectBestMatchingDesign, refineDesignSpec } from './services/deepseekService.js';
 import { extractDesignSpec } from './services/geminiService.js';
 import axios from 'axios';
 import { recordWebsiteInteraction, extractAllMediaFromUrl, processMediaBatch, primeBrowserProfileForUiUx, downloadMediaAsset } from './services/urlScraperService.js';
@@ -443,14 +443,19 @@ app.post('/api/chat', async (req, res) => {
       return res.status(404).json({ success: false, error: `Design specification file '${designId}.md' not found.` });
     }
 
-    const markdownContent = fs.readFileSync(filePath, 'utf8');
+    const rawMarkdownContent = fs.readFileSync(filePath, 'utf8');
+
+    // Refine ONLY textual content and image descriptions to match user's requested brand, domain, and purpose
+    // while strictly preserving theme, colors, layout, typography, and styling
+    console.log(`[Chatbot API] Refining content and image descriptions for prompt: "${prompt}"...`);
+    const refinedMarkdown = await refineDesignSpec(rawMarkdownContent, prompt);
 
     res.status(200).json({
       success: true,
       type: 'design_response',
       design_id: designId,
       explanation: matchResult.explanation,
-      markdown: markdownContent
+      markdown: refinedMarkdown || rawMarkdownContent
     });
 
   } catch (error) {
